@@ -7,3 +7,9 @@ dist/
 *.log
 test-results/
 playwright-report/
+# Internal delivery and verification artifacts: local paths, account details, live screenshots
+docs/evidence/
+docs/verification-*.md
+docs/source-dossier/
+docs/compiler-inputs/
+goals/
