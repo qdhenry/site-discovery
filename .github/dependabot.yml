@@ -1,0 +1,9 @@
+# Runtime dependencies are pinned exactly and mirrored in package.json
+# "overrides", so they are bumped by hand (see CONTRIBUTING.md). Dependabot
+# only keeps the CI actions current.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -4,11 +4,11 @@ Detailed behavior reference. For setup, see the [README](../README.md).
 
 ## Agent settings
 
-The authenticated settings editor reads the service's pinned Anthropic model catalog and supported options. Preview validates the draft and reports the effective reasoning/output limits, the minimum reservation and missing prerequisites without invoking a model. Save persists one global owner settings revision. A stale revision must be reloaded; repeating the same command is idempotent, while reusing its ID with different values is rejected.
+The authenticated settings editor reads models from the Anthropic Models API, which the service caches for four hours (see [Agent settings → Model catalog](agent-settings.md#model-catalog)). Effective limits never exceed the pinned pi-ai 1.0.3 adapter bounds. Preview validates the draft and reports the effective reasoning/output limits, the minimum reservation and missing prerequisites without invoking a model. Save persists one global owner settings revision. A stale revision must be reloaded; repeating the same command is idempotent, while reusing its ID with different values is rejected.
 
 | Setting | Initial value and validation |
 | --- | --- |
-| Model | `DISCOVERY_MODEL` or `claude-sonnet-4-6`; must be in the pinned Anthropic messages catalog |
+| Model | `DISCOVERY_MODEL` or `claude-sonnet-4-6`; live analysis requires it in a fresh Anthropic API catalog (not the fixture catalog) and supported by the adapter and its pricing data |
 | Output tokens | Initially 8,192 requested tokens, capped by the model's maximum; allowed 1 through that limit, or at least 1,024 when budget-based reasoning is enabled |
 | Reasoning | A compatible model default; nullable selection uses the model default reported by the service, and explicit levels must be supported |
 | Thinking budget | Unset by default; a custom token budget is available only for budget-based reasoning, from 1,024 through the model output limit minus 1,024 |

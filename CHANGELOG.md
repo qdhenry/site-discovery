@@ -14,4 +14,5 @@ First public release.
 - Durable, restart-safe runs on Pi Durable and SQLite. Uncertain calls require an explicit retry.
 - Reviewed, transactional saves to a project library, with CMS naming for AEM, Optimizely, Sitecore and generic CMSs, plus JSON export.
 - An Agent settings editor for model, reasoning, caching, evidence and limits.
-- Fixture mode for running the full workflow without provider accounts.
+- A live model catalog from the Anthropic Models API, cached in SQLite for four hours, with manual refresh. Limits are capped by the pinned adapter, and an admitted job keeps the model metadata it started with.
+- Fixture mode for running the full workflow without provider accounts. `DISCOVERY_MODEL_CATALOG_FIXTURE=1` adds an offline model catalog.
