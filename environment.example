@@ -1,0 +1,33 @@
+# Local-only service. Start from the application directory.
+# Private state, owner token, screenshots and Pi SQLite stay outside source control.
+# Default: .local/discovery
+DISCOVERY_STATE_DIR=
+# Omit to generate .local/discovery/owner-token (mode 0600); read locally to sign in.
+# DISCOVERY_OWNER_TOKEN=use-at-least-24-random-characters
+
+# Explicit deterministic fixture opt-in. No provider or website requests in fixture mode.
+# DISCOVERY_FIXTURES=1
+
+# Live Cloudflare Browser Run capture (formerly Browser Rendering).
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_BROWSER_API_TOKEN=
+
+# Live Claude through an authenticated Cloudflare AI Gateway, key-in-request mode.
+CLOUDFLARE_AI_GATEWAY_ID=
+AI_GATEWAY_API_TOKEN=
+ANTHROPIC_API_KEY=
+# Model and budgets seed durable owner settings only when no saved settings exist.
+# Later changes belong in the authenticated Agent settings UI; saved values win.
+# Initial model default: claude-sonnet-4-6
+DISCOVERY_MODEL=
+
+# All three positive settings are required before live analysis. These names
+# provide first-start defaults; leaving them unset keeps live analysis blocked
+# until the owner saves limits in Agent settings.
+# Reservation covers the full accepted model context at the highest applicable
+# input/cache tier plus the effective output ceiling, including budget reasoning.
+# The service preview reports the required bound for the selected model/options.
+# The reservation must also fit within both run and monthly limits.
+# DISCOVERY_RUN_LIMIT_USD=20
+# DISCOVERY_MONTHLY_LIMIT_USD=50
+# DISCOVERY_ATTEMPT_RESERVATION_USD=10

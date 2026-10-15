@@ -1,0 +1,189 @@
+/*
+  Tailwind Preflight, scoped to the MicroDot.
+
+  WHY THIS FILE EXISTS. A MicroDot bundle is injected as a <style> into the
+  <head> of whatever document loads it (packages/microdots-element/src/
+  defineMicroDot.ts). Tailwind ships Preflight as a DOCUMENT-WIDE reset, so an
+  unrestricted `@import "tailwindcss"` inside a redistributable bundle rewrites
+  the box model, margins, headings, lists and form controls of a page we do not
+  own. Measured on a preflight-free host against the published price bundle:
+  fourteen host properties changed the moment the bundle loaded, including a
+  browser-default button losing its background and border entirely.
+
+  tokens.css already forbids element rules here for exactly this reason.
+  Tailwind own base layer was never held to that rule; this file is how it is.
+
+  WHAT IS AND IS NOT REPRODUCED. Every rule below is Preflight verbatim, with
+  its selector confined to the mount subtree. Rules covering elements no
+  MicroDot renders are dropped rather than scoped, because a reset nobody needs
+  is still bytes in every bundle. Dropped: hr, abbr, b, strong, small, sub, sup,
+  progress, summary, the webkit datetime family, the moz focusring and
+  ui-invalid hooks, and the multiple-select optgroup pair.
+
+  THE ONE RULE DELIBERATELY NOT REPRODUCED AT ALL is Preflight html/:host block
+  (line-height, font-family, tab-size, -webkit-tap-highlight-color). That block
+  IS the host-page pollution this file exists to remove, and theme.css already
+  sets colour, family, size, weight and line-height on [data-microdot].
+
+  BORDERS SURVIVE WITHOUT THIS FILE, which is worth stating because it looks
+  like they should not. A border utility emits border-style:
+  var(--tw-border-style), and the @property that gives that variable its
+  initial value of solid is emitted by the Tailwind engine at top level, not by
+  Preflight. Verified in a built bundle, not inferred.
+
+  A NOTE ON COMMENTS IN THIS FILE. Two hazards have already caused hard
+  Tailwind build failures in this repository and tokens.test.ts guards both: a
+  glob written inside a comment can terminate the comment early, and a lone
+  apostrophe fails the parser with an unterminated-string error. There are
+  deliberately none of either below.
+*/
+
+/*
+  The universal reset. The mount element itself is included because it carries
+  the attribute and still needs the box model; its descendants and their
+  generated content follow.
+*/
+[data-microdot],
+[data-microdot]::after,
+[data-microdot]::before,
+[data-microdot] *,
+[data-microdot] *::after,
+[data-microdot] *::before,
+[data-microdot] *::backdrop,
+[data-microdot] *::file-selector-button {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0 solid;
+}
+
+/*
+  Headings size and weight from utilities, never from the user agent. Every
+  heading in every dot carries an explicit text-* and font-* pair.
+*/
+[data-microdot] h1,
+[data-microdot] h2,
+[data-microdot] h3,
+[data-microdot] h4,
+[data-microdot] h5,
+[data-microdot] h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/*
+  Links inherit. Without this a link inside our widget picks up the HOST page
+  :link colour and underline, which is foreign styling appearing inside our own
+  component rather than the other way round.
+*/
+[data-microdot] a {
+  color: inherit;
+  -webkit-text-decoration: inherit;
+  text-decoration: inherit;
+}
+
+/*
+  Monospace sizing only. Preflight also sets the family here, through a
+  Tailwind-specific theme function; the dots that render code and pre set
+  font-mono explicitly, so the family is theirs to choose.
+*/
+[data-microdot] code,
+[data-microdot] kbd,
+[data-microdot] samp,
+[data-microdot] pre {
+  font-size: 1em;
+}
+
+/* The wiring, workbench and deploy dots all render real tables. */
+[data-microdot] table {
+  text-indent: 0;
+  border-color: inherit;
+  border-collapse: collapse;
+}
+
+/* Six dots render lists. Without this they get bullets and a 40px indent. */
+[data-microdot] ol,
+[data-microdot] ul,
+[data-microdot] menu {
+  list-style: none;
+}
+
+[data-microdot] img,
+[data-microdot] svg,
+[data-microdot] video,
+[data-microdot] canvas,
+[data-microdot] audio,
+[data-microdot] iframe,
+[data-microdot] embed,
+[data-microdot] object {
+  display: block;
+  vertical-align: middle;
+}
+
+/* Uploaded images in auction and app-header depend on the clamp. */
+[data-microdot] img,
+[data-microdot] video {
+  max-width: 100%;
+  height: auto;
+}
+
+/*
+  The largest of these by visible effect. Without font inherit a control drops
+  to the user agent 13.33px system face; without background-color a button gets
+  the operating system ButtonFace grey; without color it gets ButtonText. Every
+  dot renders at least a button.
+*/
+[data-microdot] button,
+[data-microdot] input,
+[data-microdot] select,
+[data-microdot] optgroup,
+[data-microdot] textarea,
+[data-microdot] ::file-selector-button {
+  font: inherit;
+  font-feature-settings: inherit;
+  font-variation-settings: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  border-radius: 0;
+  background-color: transparent;
+  opacity: 1;
+}
+
+[data-microdot] ::file-selector-button {
+  margin-inline-end: 4px;
+}
+
+/* Firefox defaults placeholder opacity to 0.54. */
+[data-microdot] ::placeholder {
+  opacity: 1;
+}
+
+@supports (not (-webkit-appearance: -apple-pay-button)) or
+  (contain-intrinsic-size: 1px) {
+  [data-microdot] ::placeholder {
+    color: color-mix(in oklab, currentcolor 50%, transparent);
+  }
+}
+
+[data-microdot] textarea {
+  resize: vertical;
+}
+
+/* The deploy targets pane renders a search input. */
+[data-microdot] ::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+/* app-header and the livetrace admin both render number inputs. */
+[data-microdot] ::-webkit-inner-spin-button,
+[data-microdot] ::-webkit-outer-spin-button {
+  height: auto;
+}
+
+/*
+  Defensive, and not optional: theme.css sets display block on [data-microdot],
+  which would otherwise beat a hidden attribute on a nested node.
+*/
+[data-microdot] [hidden]:where(:not([hidden='until-found'])) {
+  display: none !important;
+}

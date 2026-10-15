@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    "exactOptionalPropertyTypes": true,
+    "isolatedModules": true,
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "types": [
+      "bun",
+      "node",
+      "vite/client"
+    ]
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".local",
+    "**/*.test.ts"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "service/**/*.ts",
+    "vite.config.ts"
+  ]
+}

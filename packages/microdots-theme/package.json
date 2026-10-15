@@ -1,0 +1,25 @@
+{
+  "description": "The BespokeAgentics MicroDots theme — design tokens, theme, page and font stylesheets. CSS only, no JS, no build.",
+  "exports": {
+    "./fonts.css": "./src/fonts.css",
+    "./page.css": "./src/page.css",
+    "./preflight.css": "./src/preflight.css",
+    "./theme.css": "./src/theme.css",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "license": "Apache-2.0",
+  "name": "@bespokeagentics/microdots-theme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "directory": "packages/microdots-theme",
+    "type": "git",
+    "url": "https://github.com/qdhenry/site-discovery.git"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "type": "module",
+  "version": "0.1.1"
+}

@@ -1,0 +1,21 @@
+{
+  "optionalEnvironment": [
+    "AI_GATEWAY_API_TOKEN",
+    "ANTHROPIC_API_KEY",
+    "CLOUDFLARE_ACCOUNT_ID",
+    "CLOUDFLARE_AI_GATEWAY_ID",
+    "CLOUDFLARE_BROWSER_API_TOKEN",
+    "DISCOVERY_ATTEMPT_RESERVATION_USD",
+    "DISCOVERY_FIXTURES",
+    "DISCOVERY_MODEL",
+    "DISCOVERY_MONTHLY_LIMIT_USD",
+    "DISCOVERY_OWNER_TOKEN",
+    "DISCOVERY_RUN_LIMIT_USD",
+    "DISCOVERY_STATE_DIR"
+  ],
+  "requiredBindings": [],
+  "requiredSecrets": [],
+  "runtime": "bun",
+  "schemaVersion": 1,
+  "targetProfile": "self-bun@1"
+}

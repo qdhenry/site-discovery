@@ -1,0 +1,29 @@
+[
+  {
+    "allowedChildren": [],
+    "covers": [
+      "void-operation"
+    ],
+    "hints": [
+      "buttons",
+      "commands",
+      "operations",
+      "toolbar"
+    ],
+    "parameterSchema": {
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "provenance": {
+      "references": [
+        "microdots/deploy/src/targets/app.ts:700-840"
+      ],
+      "sourceDigest": "e4bbf1cc1e5c2f0c9968dc7e2baef90b866ce9537799352e4e9fd89d218af204",
+      "sourcePath": "packages/microdots-backend-catalog/primitives/action-bar@1/definition.ts"
+    },
+    "ref": "action-bar@1",
+    "schemaVersion": 1,
+    "summary": "Groups legal commands for the current record or workflow state.",
+    "title": "Action bar"
+  }
+]

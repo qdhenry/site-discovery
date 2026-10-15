@@ -1,0 +1,44 @@
+{
+  "dependencies": {
+    "@cloudflare/containers": "0.3.7"
+  },
+  "description": "Shared Effect layers for MicroDots — RPC client, service runner, Workers adapter, D1 and secret seams. Raw TypeScript source; consume with Bun or Vite.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./container": "./src/container.ts",
+    "./d1": "./src/d1.ts",
+    "./decisions": "./src/decisions.ts",
+    "./decisions-sqlite": "./src/decisionsSqlite.ts",
+    "./evidence": "./src/evidence.ts",
+    "./evidence-evaluation": "./src/evidenceEvaluation.ts",
+    "./identity": "./src/identity.ts",
+    "./llm": "./src/llm.ts",
+    "./rest": "./src/rest.ts",
+    "./secret": "./src/secret.ts",
+    "./semantic-records-sqlite": "./src/semanticRecordsSqlite.ts",
+    "./service": "./src/service.ts",
+    "./trace": "./src/trace.ts",
+    "./worker": "./src/worker.ts"
+  },
+  "license": "Apache-2.0",
+  "name": "@bespokeagentics/microdots-runtime",
+  "peerDependencies": {
+    "@effect/platform-node": "4.0.0-rc.112",
+    "effect": "4.0.0-rc.112"
+  },
+  "peerDependenciesMeta": {
+    "@effect/platform-node": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "directory": "packages/microdots-runtime",
+    "type": "git",
+    "url": "https://github.com/qdhenry/site-discovery.git"
+  },
+  "type": "module",
+  "version": "0.2.0"
+}

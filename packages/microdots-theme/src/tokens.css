@@ -1,0 +1,657 @@
+/* ============================================================
+   BespokeAgentics — design tokens
+
+   Ported from BESPOKE_AGENTICS_FLEET/packages/tokens/src/tokens.css. Every hex,
+   ratio and comment about WHY a value is what it is comes from there; that repo
+   is the ground truth and this is a consumer. Two deliberate deviations, both
+   load-bearing:
+
+     1. LIGHT IS THE DEFAULT. The source is dark-first (`:root, [data-theme=dark]`).
+        Here `:root` carries the LIGHT values. A MicroDot’s sheet is injected as
+        a <style> into `document.head` of whatever document loads the bundle, so
+        defaulting to dark would paint a stranger’s page black.
+
+     2. NO ELEMENT RULES. This file is custom properties only. The source’s
+        `@layer tokens-base` element defaults (html, body, p, h1-h5, button,
+        label, code, a, hr) live in `page.css`, which ONLY the two first-party
+        pages import — a bare-tag rule shipped inside a MicroDot bundle would
+        restyle a host we do not own.
+
+   Also dropped: the `--bar-*` Lexicon chrome-bar plate (9 tokens). Nothing here
+   has a chrome bar.
+   ============================================================ */
+
+/* ---------- Cascade layer order ----------
+   Declared here because this sheet is imported BEFORE Tailwind, so this is the
+   first `@layer` statement in the flattened output and it fixes the order for
+   the whole document. Tailwind’s own statement arrives later and is inert —
+   every name is already placed. (Verified in the built bundle: Tailwind emits
+   `@layer tokens-base,components;` between its `base` block and its `utilities`
+   block, which is the same effective order.)
+
+   `tokens-base` sits between Tailwind’s `base` (preflight) and
+   `components`/`utilities` — the only position that gets both halves right:
+
+     · above `base`      — preflight does not strip page.css’s heading sizes
+     · below `utilities` — `class="text-fg-muted"` on a <p> still wins
+
+   A `@layer` STATEMENT is one of only two at-rules CSS permits before `@import`
+   (the other is `@charset`), so this is legal here where a `@layer {}` BLOCK
+   would not be. */
+@layer theme, base, tokens-base, components, utilities;
+
+@import './fonts.css';
+
+/* ============================================================
+   GLOBAL — no theme dependency.
+
+   DELIBERATELY UNLAYERED, and this is not a style choice. The `@theme inline`
+   block in theme.css re-declares several of these under the SAME NAME
+   (`--radius-md: var(--radius-md)`, `--font-mono: var(--font-mono)`,
+   `--shadow-sm: var(--shadow-sm)`), and Tailwind emits `@theme` output into
+   `@layer theme`. Unlayered CSS beats every layer regardless of order or
+   specificity, so the real value below always wins and the self-reference never
+   resolves. Wrap this block in a layer and `--radius-*`, `--shadow-*` and
+   `--font-*` all silently become self-references that resolve to nothing.
+   `tokens.test.ts` fails if anything in this file becomes layered.
+   ============================================================ */
+:root {
+  /* ---------- Brand Blue Scale (Ice → Ink) ---------- */
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+  --blue-900: #1e3a8a;
+
+  /* ---------- Brand ladder (the white-label seam) ----------
+     Every accent-semantic token below resolves through these six rungs, never
+     through `--blue-*` directly. Replacing these six re-brands the whole
+     system; reading `--blue-*` from a component cuts that seam.
+     `palette-usage.test.ts` fails on a `--blue-*` reference outside this
+     package. */
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+
+  /* Channel triplets for the three rungs that carry translucent tints. */
+  --brand-400-rgb: 96, 165, 250;
+  --brand-500-rgb: 59, 130, 246;
+  --brand-600-rgb: 37, 99, 235;
+
+  /* Primary CTA gradient — 135°, fixed in both themes. The stops are 600 → 700
+     rather than anything wider because both must clear AA under
+     `--text-on-brand` (5.17:1 and 6.70:1); `--brand-500` is 3.68:1, so there is
+     no lighter rung to reach for and hover resolves to the light stop instead. */
+  --gradient-brand: linear-gradient(135deg, var(--brand-600), var(--brand-700));
+  --gradient-brand-hover: linear-gradient(
+    135deg,
+    var(--brand-600),
+    var(--brand-600)
+  );
+
+  /* ---------- Semantic raw colors ---------- */
+  --green: #4ade80;
+  --green-deep: #16a34a;
+  --amber: #fbbf24;
+  --amber-deep: #d97706;
+  --red: #f87171;
+  --red-deep: #dc2626;
+
+  /* ---------- Font families ----------
+     The fallback stacks are load-bearing, not decoration: `fonts.css` points at
+     pinned gstatic URLs, and a host with a `font-src ’self’` CSP — or no network
+     — lands here instead of breaking. */
+  --font-display:
+    'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-body:
+    'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'DM Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ---------- Font weights ---------- */
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* ---------- Font sizes (rem) ----------
+     NOTE: `--fs-xs` and `--fs-sm` are deliberately NOT mapped to Tailwind’s
+     `text-xs` / `text-sm` in theme.css — see the comment there. They are a
+     section-number size and a helper size, not general-purpose small text. */
+  --fs-xs: 0.55rem; /* 8.8px  — section numbers */
+  --fs-sm: 0.68rem; /* 10.9px — helper text */
+  --fs-caption: 0.72rem; /* 11.5px — caption, labels, overlines */
+  --fs-body-s: 0.82rem; /* 13.1px — small body */
+  --fs-body-m: 0.88rem; /* 14.1px — standard body */
+  --fs-body-l: 1.1rem; /* 17.6px — hero sub */
+  --fs-button: 0.85rem; /* 13.6px */
+  --fs-button-sm: 0.75rem;
+  --fs-button-lg: 0.95rem;
+  --fs-input: 0.85rem;
+  --fs-label: 0.75rem;
+  --fs-display-m: 1.55rem; /* 24.8px — card titles */
+  --fs-display-l: 2.8rem; /* 44.8px — section heading */
+  --fs-display-xl: 4rem; /* 64px   — hero */
+  --fs-mono: 0.85rem;
+  --fs-mono-sm: 0.72rem;
+
+  /* ---------- Line heights ---------- */
+  --lh-tight: 1.05;
+  --lh-display: 1.15;
+  --lh-heading: 1.2;
+  --lh-body: 1.65;
+  --lh-relaxed: 1.7;
+  --lh-code: 1.7;
+
+  /* ---------- Letter spacing ----------
+     `--ls-tight` is POSITIVE: it is the button tracking, not a heading
+     tightener. Display sizes tighten with explicit negative values in page.css. */
+  --ls-tight: 0.02em;
+  --ls-normal: 0.04em;
+  --ls-wide: 0.08em;
+  --ls-wider: 0.1em;
+  --ls-widest: 0.12em;
+  --ls-ultra: 0.14em;
+
+  /* ---------- Spacing (4px base) ----------
+     Raw tokens only. They are NOT mapped onto Tailwind’s `--spacing-*` scale —
+     see theme.css for why. */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+  --sp-24: 96px;
+
+  /* ---------- Border radius ---------- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  /* The named radius set of the MicroDots Web Design System. The marketing site
+     declared these in apps/website/src/styles/site.css until 2026-10-02; they
+     moved here when the Platform adopted the same system
+     (wiki/plans/active/platform-ui-web-design-system-overhaul.md, ruling R4),
+     so both surfaces read one declaration. */
+  --radius-code: 4px;
+  --radius-row-action: 7px;
+  --radius-control: 8px;
+  --radius-cta: 10px;
+  --radius-mock-row: 10px;
+  --radius-panel: 12px;
+  --radius-code-card: 14px;
+  --radius-card: 16px;
+  --radius-pill: 999px;
+
+  /* ---------- Flair inks ----------
+     FILLS ONLY: a disc, bar, ring, rule or band. A flair ink never colours
+     type and never means status (crimson is not an error, jade is not a
+     success). They hold on both grounds, so they are theme-independent;
+     `--flair-marker` is the one theme-dependent mix and lives in each theme.
+
+     In the theme package since 2026-10-02 by ruling R2 of
+     wiki/plans/active/platform-ui-web-design-system-overhaul.md: the Platform
+     ships LIGHT flair (dot mark, live dots, the gate pulse, row splashes).
+     Confetti, the marker swipe, the cobalt band and the burst stay
+     marketing-only. Deliberately NOT mapped in theme.css, so Tailwind emits no
+     `bg-flair-*` utility: reaching one takes `var(--flair-*)` on purpose. */
+  --flair-cobalt: #3355ff;
+  --flair-flare: #ff4d00;
+  --flair-cyan: #00e5ff;
+  --flair-amber: #ffc400;
+  --flair-violet: #8b3dff;
+  --flair-crimson: #ff1e5a;
+  --flair-jade: #00e676;
+
+  /* ---------- Borders ---------- */
+  --bw-default: 1px;
+  --bw-thick: 2px;
+
+  /* ---------- Opacity (interactive tiers) ---------- */
+  --op-ghost: 0.04;
+  --op-subtle: 0.06;
+  --op-hover: 0.1;
+  --op-active: 0.15;
+
+  /* ---------- Sizing ---------- */
+  --icon-sm: 16px;
+  --icon-default: 20px;
+  --icon-lg: 24px;
+  --badge-dot: 6px;
+  --max-narrow: 800px;
+  --max-default: 1200px;
+  --max-wide: 1400px;
+  --gutter: 32px;
+
+  /* ---------- Motion + layout grid ----------
+     Values verbatim from the Platform prototype’s design-system export
+     (_prototypes/.../_ds/.../tokens/{effects,spacing}.css). Added for the
+     Platform screens (Pages draws a twelve-column grid with 12/8/6/4/3 spans);
+     theme-invariant, so no light/dark override blocks carry them. */
+  --duration-fast: 0.2s;
+  --duration-medium: 0.3s;
+  --duration-slow: 0.5s;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --grid-columns: 12;
+  --grid-gutter: 12px;
+
+  /* ---------- DESIGN-SYSTEM NAME ALIASES — theme-invariant half ----------
+     The MicroDots Platform Style Guide is authored entirely against the
+     prototype design-system NAMES, and instructs the reader on page 1 to build
+     against `var(--token)` and treat its hex columns as reference only. 49 of
+     those names were declared nowhere here, so a screen built literally from
+     the document rendered with empty `var()`s and a clean console. Ruled
+     2026-08-18: this package gains the names.
+
+     TWO RULES, both load-bearing:
+
+       1. AN ALIAS POINTS AT A TOKEN THIS PACKAGE ALREADY DECLARES. No hex,
+          length or ratio is copied out of the document. Where the two disagree
+          on a VALUE the package wins, because its value is gated by
+          `contrast.test.ts` and the document concedes in its own section 11
+          that its `--text-muted` does not clear AA. The only literals below are
+          for genuinely missing capability, and there are two of them.
+
+       2. THEME-DEPENDENT ALIASES DO NOT BELONG IN THIS BLOCK. A custom property
+          is substituted at computed-value time on the element that declares it,
+          so `--accent: var(--accent-default)` written once here would freeze
+          the LIGHT accent and inherit it into every `[data-theme=dark]`
+          subtree. Those twelve are declared in BOTH theme blocks below.
+
+     `var-resolution.test.ts` fails on any `var()` in this repo naming a token
+     no block declares — the gate that was missing when these 49 were counted —
+     and pins the not-aliased list below so it stays a decision, not a lapse. */
+
+  /* The design system suffixes the ramp rung onto the raw status hues. */
+  --green-400: var(--green);
+  --amber-400: var(--amber);
+  --red-400: var(--red);
+
+  /* Layout containers. NOT missing capability, though both the style-guide page
+     and the question page recorded them as such: `--max-default` and
+     `--max-wide` above already carry 1200px and 1400px, the design-system
+     values byte for byte. */
+  --container-max: var(--max-default);
+  --container-wide: var(--max-wide);
+
+  /* MISSING CAPABILITY — the 20px blur the style guide says `--surface-overlay`
+     is always paired with. A FILTER FUNCTION rather than a length, because
+     `backdrop-filter: var(--blur-backdrop)` is how it is consumed. Verbatim
+     from the design-system export. */
+  --blur-backdrop: blur(20px);
+
+  /* The type scale under the design-system names. Every one resolves to an
+     `--fs-*` rung whose rem value equals the px the document quotes. */
+  --text-display-lg: var(--fs-display-l); /* 44.8px */
+  --text-display-md: var(--fs-display-m); /* 24.8px */
+  --text-body-lg: var(--fs-body-l); /* 17.6px */
+  --text-body-md: var(--fs-body-m); /* 14.1px */
+  --text-body-sm: var(--fs-body-s); /* 13.1px */
+
+  /* Weights. `--weight-extrabold` (800) and `--weight-black` (900) are
+     DELIBERATELY NOT ALIASED: the `--fw-*` ladder stops at 700, the three
+     display roles write 800 as an explicit literal, and adding two rungs is a
+     change to the type system rather than a rename. */
+  --weight-light: var(--fw-light);
+  --weight-regular: var(--fw-regular);
+  --weight-medium: var(--fw-medium);
+  --weight-semibold: var(--fw-semibold);
+  --weight-bold: var(--fw-bold);
+
+  /* Eyebrow tracking. `--tracking-snug` (-0.02em) is DELIBERATELY NOT ALIASED:
+     every `--ls-*` rung is positive by design (see the letter-spacing block
+     above) and display tightening is written as an explicit negative literal at
+     the use site, so there is no token to point at. */
+  --tracking-label: var(--ls-widest); /* 0.12em */
+
+  /* ALSO DELIBERATELY NOT ALIASED, and recorded here so the omission reads as a
+     decision:
+
+       `--space-1 … --space-24` (12) — this repo spends spacing through Tailwind
+         utilities, with `--sp-1 … --sp-24` above as the raw ladder for the rare
+         direct case. The values are identical, so an alias would be trivial;
+         what it would cost is a THIRD spacing vocabulary in a package that
+         already refuses the numeric Tailwind `--spacing-<n>` override for a
+         recorded reason (see theme.css). `var-resolution.test.ts` makes a
+         `var(--space-6)` fail loudly rather than render nothing, which is the
+         protection that actually matters.
+
+       `--logo-bespoke|agentics|mark|tagline|rule` (5) — Lexicon logo chrome,
+         the same plate as the `--bar-*` tokens this port already dropped. The
+         style guide does not use them either: its wordmark is `--text-wordmark`
+         plus `--accent`. */
+}
+
+/* ============================================================
+   LIGHT THEME — the default.
+
+   `[data-theme=’light’]` rides along with `:root` so a single element can be
+   forced light INSIDE a dark document. All three selectors here and in the dark
+   block are specificity (0,1,0), so SOURCE ORDER is the entire switching
+   mechanism: the dark block MUST stay below this one. `tokens.test.ts` asserts
+   both the selector shape and the ordering.
+   ============================================================ */
+:root,
+[data-theme='light'] {
+  /* Gives native <select> popups, checkboxes, carets and scrollbars the right
+     chrome. It is an INHERITED property, so it reaches a MicroDot forced to a
+     different theme than its page. Without this line the forms in
+     bespoke-contact and bespoke-chat look half-converted in dark mode and no
+     Tailwind colour utility can reach them. */
+  color-scheme: light;
+
+  --surface-page: #f8fafc;
+  /* Tinted to the slate ramp’s own hue rather than pure #fff — the other three
+     light surfaces are already tinted. Still the brightest surface, so a card
+     reads as raised above the page, but only at 1.036:1: in light theme the card
+     EDGE is carried by the 1px `--border-default`, not by the fill delta. */
+  --surface-default: #fdfeff;
+  --surface-raised: #f1f5f9;
+  --surface-elevated: #e2e8f0;
+  --surface-overlay: rgba(248, 250, 252, 0.88);
+
+  --border-default: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-accent: rgba(var(--brand-600-rgb), 0.15);
+  --border-strong: #cbd5e1;
+
+  --text-primary: #0f172a;
+  /* Prose tier. Clears WCAG AAA (7:1) on every light surface including the
+     elevated #e2e8f0 plate; measured worst case 7.28:1. */
+  --text-secondary: #3d4a5e;
+  /* Supporting tier: AA 4.5:1 only, and it must NEVER carry a paragraph.
+     5.26:1 opaque worst case / 4.51:1 composited over any `--int-*` tint. The
+     two-tier gap against --text-secondary holds at 2.02, above the ≥1.5 floor
+     contrast.test.ts pins.
+     Reads as `text-fg-subtle` in Tailwind — which is WEAKER than
+     `text-fg-muted` (--text-secondary). The names invert intuition; see
+     theme.css. */
+  --text-muted: #515f74;
+  --text-link: var(--brand-600);
+  --text-link-hover: var(--brand-700);
+  /* The one deliberate pure value in this sheet, in both themes. It is painted
+     on an accent fill, and tinting it toward the brand hue would cost contrast
+     to satisfy a doctrine. Maximum contrast wins on this pair. */
+  --text-on-brand: #ffffff;
+  --text-wordmark: #1e293b;
+  --text-heading: #0f172a;
+  /* An accent or judgement colour used AS TEXT, as opposed to `--accent-subtle`
+     and the `--status-*-fg` trio, which paint rails, dots, borders and progress
+     fills where the 3:1 non-text bar applies. Never put a --status-*-fg on a
+     glyph. --text-accent climbs a RUNG rather than taking a literal hex, because
+     a hex would cut the white-label seam. */
+  --text-accent: var(--brand-700); /* 5.44:1 / 4.66:1 on --int-active */
+  --text-success: #007330; /* 4.87:1 / 4.55:1 */
+  --text-warning: #995100; /* 4.82:1 / 4.51:1 */
+  --text-error: #c60012; /* 5.00:1 / 4.50:1 */
+
+  --accent-default: var(--brand-600);
+  --accent-strong: var(--brand-700);
+  --accent-subtle: var(--brand-500);
+  --accent-muted: var(--brand-400);
+  --accent-label: var(--brand-600);
+  /* An accent surface that CARRIES A LABEL. `--accent-default` is 2.54:1 and
+     `--accent-strong` 3.68:1 under white, so neither may hold a label. Same two
+     rungs in both themes, so a fill reads as one plate wherever it appears, and
+     hover goes LIGHTER. */
+  --accent-fill: var(--brand-700);
+  --accent-fill-hover: var(--brand-600);
+
+  --int-ghost: rgba(var(--brand-600-rgb), 0.03);
+  --int-subtle: rgba(var(--brand-600-rgb), 0.05);
+  --int-hover: rgba(var(--brand-600-rgb), 0.08);
+  --int-active: rgba(var(--brand-600-rgb), 0.12);
+  --int-glow: rgba(var(--brand-600-rgb), 0.06);
+
+  --status-success-fg: var(--green-deep);
+  --status-success-bg: rgba(22, 163, 74, 0.07);
+  --status-success-border: rgba(22, 163, 74, 0.15);
+  --status-warning-fg: var(--amber-deep);
+  --status-warning-bg: rgba(217, 119, 6, 0.07);
+  --status-warning-border: rgba(217, 119, 6, 0.15);
+  --status-error-fg: var(--red-deep);
+  --status-error-bg: rgba(220, 38, 38, 0.07);
+  --status-error-border: rgba(220, 38, 38, 0.15);
+  /* Info is the accent itself — in progress, AI-authored, or selected. Not a
+     judgement, so it follows the brand; success/warning/error never do. */
+  --status-info-fg: var(--brand-600);
+  --status-info-bg: rgba(var(--brand-600-rgb), 0.06);
+  --status-info-border: rgba(var(--brand-600-rgb), 0.15);
+
+  /* The NEUTRAL member of the mark family — draft, queued, cancelled,
+     archived, paused. It exists because nothing else in the sheet could do the
+     job: `--border-strong` is 1.20:1 here and 1.39:1 in dark, so an inactive
+     dot painted with it is invisible, and the only visible alternative was a
+     `--text-*` token, which is the glyph ramp and wrong for a mark.
+
+     Five sites across roster, workbench and wiring had reached for
+     `bg-fg-subtle` / `bg-fg-muted` for exactly that reason. This is the rung
+     that lets them stop.
+
+     3.54:1 on the worst light surface, 3.98:1 on the worst dark one — over the
+     3:1 non-text bar, and deliberately UNDER the text tiers (5.26 / 5.48), so
+     an inactive mark stays quieter than any label beside it. */
+  --mark-neutral: #6b7a91;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 8px 30px rgba(15, 23, 42, 0.08);
+  --shadow-glow: 0 0 40px rgba(var(--brand-600-rgb), 0.06);
+  /* No accent ring in light — the card edge is slate in both stops. */
+  --shadow-card:
+    0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-button-hover: 0 4px 20px rgba(var(--brand-600-rgb), 0.2);
+  --shadow-focus: 0 0 0 3px rgba(var(--brand-600-rgb), 0.03);
+
+  --noise-opacity: 0.012;
+
+  /* ---------- DESIGN-SYSTEM NAME ALIASES — theme-dependent half ----------
+     Rule 2 of the block at the top of this file: these twelve are declared in
+     BOTH theme blocks, never once on the global block, because a custom
+     property is substituted where it is DECLARED and then inherits as a fixed
+     value. Aliased once on `:root`, `--accent` would carry the light accent
+     into a `<readout-view data-theme="dark">` and no test would see it.
+     `tokens.test.ts` asserts the two blocks declare the same set, which is the
+     same rule approached from the other side. */
+  --accent: var(--accent-default);
+
+  --interactive-ghost: var(--int-ghost);
+  --interactive-subtle: var(--int-subtle);
+  --interactive-hover: var(--int-hover);
+  --interactive-active: var(--int-active);
+  --interactive-glow: var(--int-glow);
+
+  /* The bare tone name resolves to the `-fg` rung, and that is decided by the
+     design-system values rather than by preference: its `--success` is #16a34a
+     light and #4ade80 dark, which is exactly `--status-success-fg` in both
+     themes, and warning, error and info line up the same way. The `-bg` and
+     `-border` rungs keep their full names — there is no bare name for them to
+     collide with. Note the 3:1 non-text bar still applies: a GLYPH takes
+     `--text-success`, never this. */
+  --success: var(--status-success-fg);
+  --warning: var(--status-warning-fg);
+  --error: var(--status-error-fg);
+  --info: var(--status-info-fg);
+
+  /* Renamed, NOT missing capability, though the question page listed it beside
+     the two real gaps: `--shadow-button-hover` above already IS the primary-CTA
+     shadow the style guide names — identical in dark, and 0.20 rather than 0.18
+     alpha in light. Copying the design-system literal would have added a fifth
+     shadow duplicating the fourth, in raw rgb, cutting the white-label seam. */
+  --shadow-cta: var(--shadow-button-hover);
+
+  /* MISSING CAPABILITY, and the only colour literal added by the alias layer.
+     Verbatim from the design-system export. The stops are `--blue-200` here and
+     `--blue-900` in dark; neither is reachable through the brand ladder, which
+     spans 200-700 and carries channel triplets for three rungs only, so this is
+     written out rather than composed. It is a transparent wash behind a hero
+     band, never a text pairing, so no contrast rule governs it. */
+  --hero-gradient: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    rgba(191, 219, 254, 0.4) 0%,
+    transparent 70%
+  );
+
+  /* THE MARK'S BAND — the five descending discs that follow the wordmark.
+     Not a status palette and not an accent: these are the marketing site's
+     editorial hues, and the mark is the one place the Platform speaks that
+     vocabulary. Blue is still never a status, and these are still never a
+     status either — they carry no meaning individually, only as the mark.
+
+     These five values were copied from apps/website/index.html (:170-175 as
+     it stood on 2026-08-28) while that file was the marketing site’s design
+     authority. It was superseded on 2026-10-01 by apps/website/DESIGN.md plus
+     the MicroDots Web Design System, and the site no longer draws this mark,
+     so THIS FILE now holds the values and the Platform shell is their only
+     reader. Contrast ratios are against #f8fafc. */
+  --ed-hero: #008456; /* 4.53:1 */
+  --ed-wire: #007f91; /* 4.52:1 */
+  --ed-ent: #9a3cff; /* 4.50:1 */
+  --ed-rel: #e80027; /* 4.50:1 */
+  --ed-cta: #966c00; /* 4.52:1 */
+
+  /* The marker swipe: `--flair-amber` mixed 60% into `--surface-page`. */
+  --flair-marker: #fcda65;
+}
+
+/* ============================================================
+   DARK THEME — opt-in.
+
+   One selector, matching BOTH `<html data-theme="dark">` and
+   `<readout-view data-theme="dark">`, because custom properties inherit either
+   way. This is why the host never has to broker a theme down to individual
+   MicroDots: one attribute on <html> re-themes every subtree on the page.
+   ============================================================ */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface-page: #050509;
+  --surface-default: #0a0e1a; /* Midnight */
+  --surface-raised: #0f1424;
+  --surface-elevated: #151d35;
+  --surface-overlay: rgba(5, 5, 9, 0.85);
+
+  --border-default: #1a2038;
+  --border-subtle: #111830;
+  --border-accent: rgba(var(--brand-500-rgb), 0.15);
+  --border-strong: #2a3558;
+
+  --text-primary: #c8d4e8;
+  /* Prose tier. Clears AAA (7:1) on every dark surface including the elevated
+     #151d35 plate; measured worst case 7.34:1. */
+  --text-secondary: #9bacd4;
+  /* Supporting tier: AA only, never prose. 5.48:1 opaque worst case / 4.51:1
+     composited over any `--int-*` tint. Two-tier gap holds at 1.87. */
+  --text-muted: #8194bc;
+  --text-link: var(--brand-400);
+  --text-link-hover: var(--brand-300);
+  --text-on-brand: #ffffff;
+  --text-wordmark: #93afd0;
+  --text-heading: #d0daf0;
+  --text-accent: var(--brand-400); /* 6.56:1 / 5.40:1 on --int-active */
+  --text-success: var(--green); /* 9.57:1 / 8.23:1 */
+  --text-warning: var(--amber); /* 9.99:1 / 8.57:1 */
+  --text-error: var(--red); /* 6.03:1 / 5.42:1 */
+
+  --accent-default: var(--brand-400);
+  --accent-strong: var(--brand-500);
+  --accent-subtle: var(--brand-300);
+  --accent-muted: var(--brand-200);
+  --accent-label: var(--brand-400);
+  --accent-fill: var(--brand-700);
+  --accent-fill-hover: var(--brand-600);
+
+  --int-ghost: rgba(var(--brand-500-rgb), 0.04);
+  --int-subtle: rgba(var(--brand-500-rgb), 0.06);
+  --int-hover: rgba(var(--brand-500-rgb), 0.1);
+  --int-active: rgba(var(--brand-500-rgb), 0.15);
+  --int-glow: rgba(var(--brand-500-rgb), 0.08);
+
+  --status-success-fg: var(--green);
+  --status-success-bg: rgba(74, 222, 128, 0.08);
+  --status-success-border: rgba(74, 222, 128, 0.15);
+  --status-warning-fg: var(--amber);
+  --status-warning-bg: rgba(251, 191, 36, 0.08);
+  --status-warning-border: rgba(251, 191, 36, 0.15);
+  --status-error-fg: var(--red);
+  --status-error-bg: rgba(248, 113, 113, 0.08);
+  --status-error-border: rgba(248, 113, 113, 0.15);
+  --status-info-fg: var(--brand-400);
+  --status-info-bg: rgba(var(--brand-400-rgb), 0.08);
+  --status-info-border: rgba(var(--brand-400-rgb), 0.15);
+
+  /* See the light block: over the 3:1 non-text bar, under the text tiers. */
+  --mark-neutral: #6b7ba6;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 40px rgba(var(--brand-500-rgb), 0.08);
+  --shadow-card:
+    0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(var(--brand-500-rgb), 0.03);
+  --shadow-button-hover: 0 4px 20px rgba(var(--brand-500-rgb), 0.25);
+  --shadow-focus: 0 0 0 3px rgba(var(--brand-500-rgb), 0.04);
+
+  --noise-opacity: 0.02;
+
+  /* ---------- DESIGN-SYSTEM NAME ALIASES — theme-dependent half ----------
+     The dark twin of the block at the end of the light theme. Same twelve
+     names, same targets; only `--hero-gradient` carries a different literal,
+     because it is the one alias with no token to point at. */
+  --accent: var(--accent-default);
+
+  --interactive-ghost: var(--int-ghost);
+  --interactive-subtle: var(--int-subtle);
+  --interactive-hover: var(--int-hover);
+  --interactive-active: var(--int-active);
+  --interactive-glow: var(--int-glow);
+
+  --success: var(--status-success-fg);
+  --warning: var(--status-warning-fg);
+  --error: var(--status-error-fg);
+  --info: var(--status-info-fg);
+
+  --shadow-cta: var(--shadow-button-hover);
+
+  --hero-gradient: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    rgba(30, 58, 138, 0.25) 0%,
+    transparent 70%
+  );
+
+  /* THE MARK'S BAND — the five descending discs that follow the wordmark.
+     Not a status palette and not an accent: these are the marketing site's
+     editorial hues, and the mark is the one place the Platform speaks that
+     vocabulary. Blue is still never a status, and these are still never a
+     status either — they carry no meaning individually, only as the mark.
+
+     The dark twin of the block in the light theme: copied from
+     apps/website/index.html (:111-116 as it stood on 2026-08-28), which was
+     superseded on 2026-10-01. THIS FILE now holds the values. Contrast ratios
+     are against #050509. */
+  --ed-hero: #00f5a0; /* 14.12:1 */
+  --ed-wire: #00e0ff; /* 12.70:1 */
+  --ed-ent: #b26bff; /*  6.24:1 */
+  --ed-rel: #ff3b5c; /*  5.84:1 */
+  --ed-cta: #ffb800; /* 11.73:1 */
+
+  --flair-marker: #9b7804;
+}

@@ -1,0 +1,60 @@
+{
+  "host": {
+    "id": "site-discovery-mini-host",
+    "label": "DiscoveryRun mini-host",
+    "ownedInputs": []
+  },
+  "routes": [
+    {
+      "path": "/",
+      "label": "DiscoveryRun",
+      "title": "DiscoveryRun workspace",
+      "sectionIds": [
+        "fronts",
+        "backend"
+      ],
+      "mounts": [
+        {
+          "id": "front-1",
+          "tag": "site-discovery-discovery",
+          "slotId": "front-1-slot",
+          "values": {
+            "api-url": "http://localhost:3193"
+          },
+          "order": 0
+        },
+        {
+          "id": "backend-surface",
+          "tag": "site-discovery-backend",
+          "slotId": "backend-slot",
+          "values": {
+            "api-url": "http://localhost:3193"
+          },
+          "order": 1
+        }
+      ]
+    }
+  ],
+  "slotManifest": {
+    "theme": {
+      "name": "@bespokeagentics/microdots-theme",
+      "version": "0.1.1"
+    },
+    "slots": [
+      {
+        "id": "front-1-slot",
+        "kind": "band",
+        "row": 1,
+        "capacity": 1
+      },
+      {
+        "id": "backend-slot",
+        "kind": "band",
+        "row": 2,
+        "capacity": 1
+      }
+    ]
+  },
+  "wires": [],
+  "watch": []
+}

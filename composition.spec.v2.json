@@ -1,0 +1,260 @@
+{
+  "brief": "Generated DiscoveryRun workspace",
+  "catalogLock": {
+    "allocationBaselineDigest": "d1e8b43ace03b4cc982a977032343cda652928daa3a1ce732f4533104df765d4",
+    "backendCatalogDigest": "09b5def463f496e0086bcb33231ce26154c9cc4d2eb0a7e9da4965ae06f030b9",
+    "capabilityDigests": {
+      "assets": "5785ec8e7b378125c297698cc5fbef4dc3bae01397ff05a4b4b093ab7eb8d347",
+      "auth.oauth": "345fc68ee36413751633b387c3a81e646f30113a6efb7daf845bd13d02719a27",
+      "auth.pin": "5ddf075df9bf4970a5c49514c0fcf1e70b2feea0268703c2a254ba0ae1a30576",
+      "config.versioned": "516e7a5dec2b0bcc72e30ab514953742b3949924a68580aff0fb301ddd3e28f3",
+      "connector.github-public-repository": "d3facf1f418d4a6820b53f17bd2a6d8bcfe16361ec90c2351f97078a2f7f143c",
+      "connector.github-repository-content": "51da25084a28508c72121d2f96d1dba1b2ec0727d8bd6ac853af0d0ef73a6525",
+      "images": "3b29d8357fa2421f008cc8b6a765171b2b7ba7b80d1386b406cd911517db0f41",
+      "ingest": "cff6cecedd2a3898e915ce2ed607af68ec32e05b017eb26d37598cb34268b8a6",
+      "model": "ee5936dcb9dee84bb9168960c09f51c44a5d98326bdc595890a4868ed7545be2",
+      "model.failover": "3dbd581f4d5ba460d2ed82bb09956758c09f7794f487f6b27f0f79e30c61ed5f",
+      "model.optional": "0f2920b9c3600018cbd105afe750bbc4b7e993937826f4a26d545673d2babea8",
+      "model.spend-cap": "fe5a93e3806fced98c494bc3c3afe7ecbc2220ed1fe319897d26da1cf49b10ca",
+      "question-bank": "21f067dfd7bfbff5dab3eded8f2de887c16cd23d595468b026df4c9d5a8331b1",
+      "refresh": "ce043ab835e3d3abaa7da21503feafecf44beedd718bf9cafde5bbeedf42c0f5",
+      "retention": "99449be0f1fa3a0637903ef0730915cade95cd808715a817811f0345f70cc034",
+      "seed": "1f96b1db026a0ea943b294316c82bde36fa83524927e503d2540272e4672e02b",
+      "semantic.review": "738538b77a0d1f90fb6acfc253567b13b83dced7ac326d09e3f566e432c371d8",
+      "store.d1": "fb98a95d86c0605fee3fab368867dc3b6273fd9303cbe8c2e02ef47ba5085a0d",
+      "store.memory": "c360bc0ed963e72cf66ac75b0e0dfffffd6a3c4af32bb97cde7e6a39b6187139",
+      "store.sqlite": "9b7f6a882a59e1a6bdf618d23e3d6208623ce7fec7e0816f2572ba817627a32f",
+      "stream": "f75142657c1ccc7c944ce31b08710e378d5628d3600a10b681df01aac63494d4",
+      "trace": "e76a8b11d2b1858cecb82e58ebbbeec7cefcc27d26f46cec7f44d3adb240e163",
+      "validation": "16763de6ab01dd599619dd05612ba4cd8a3c80fa6de6405a60428dab05669966"
+    },
+    "compilerVersion": "1.36.0-p6",
+    "recipeDigests": {
+      "analytics-dashboard@1": "699331fdad504b920eb7ebf7a601133450084e75e3dfb9950d200186cc25b45a",
+      "booking-calendar@1": "a982c55f2962755933c5d530795d65113e58117270a051f7d3eb04f5bb5968ee",
+      "deploy-console@1": "23bea42057561ac6c6dcb7cbb20aea5e6476d53c9267a2a8db27491a23fb7998",
+      "inbox-triage@1": "58d18c8b918a2933a6addcaa23505a2f9d7e8ebd8e0b19a6a75c301c03c88aee",
+      "spreadsheet@1": "bac564fd2d17ded61013b4709b3f775c4f258aa209da2738d2841e75b3c015f6"
+    },
+    "schemaVersion": 1,
+    "shapeDigests": {
+      "shape:calendar@1": "48863a0a81728123ef7405d19bc56ca2f9875b145b3d7c5c6819a9b5cf5c70e8",
+      "shape:canvas@1": "c23cd107318de16467b7fb38c6ab73a79857325979b5dfec88cd7b86d547f083",
+      "shape:chart@1": "54f83cfe235ff874ac91765e96c099f5720a4f6b6f7b93f77bc188b60a9fcef5",
+      "shape:chat@1": "e9e2d8900b920c887e22f0e7f5af82b863ebbab118403ad55330b5d4692d10b2",
+      "shape:console@1": "e3787b00b3e01f1b26a98cd764aa9c9d770dee19e488d138f85146b5522e9293",
+      "shape:detail@1": "3618d25fd00f2742b774c0e1e9f137cacaeb6dcd84780ab1ac6f079a32e01fd2",
+      "shape:discovery@1": "66773ae43e2dac324f1d04261b2dcfdb54fd21e9ab56008411ae4ef4f113b435",
+      "shape:form@1": "2b5b35d799924d7958cc09323476e836e6759c61bf437fba46f75063c05abab3",
+      "shape:list@1": "8b2d78c24642eaf7df23096606169bb9a2ef2794632187b6ec271234786ae5de",
+      "shape:metrics@1": "00bd3a5a59f0408fddab6de6f5d3d2b348e38e41fdeadd8c1824d4afd4032bf3",
+      "shape:table@1": "c964849ded424140fc0f3ce12ac56edfaece7a1c5abe2f7798c3c6107b69f0af",
+      "shape:view@1": "5d9fb017ac6edeb72a49cdc6e3379d86f23ee5dba6333c7b45f1401aaf502386"
+    },
+    "snapshotSha256": "ba9f81c33d7b5e68590871d55d9e42fcc2f03e59c3265591cb2d6e612ee16527",
+    "targetMatrixDigest": "27087dc7636b0e8d70d4f62b841bfd88c64d051fe919ccfc68d9edfffc7cf8b0"
+  },
+  "generate": [
+    {
+      "backend": {
+        "layout": {
+          "nodes": [
+            {
+              "id": "backend-root",
+              "parameters": {},
+              "primitive": "action-bar@1"
+            }
+          ],
+          "rootId": "backend-root"
+        },
+        "tag": "site-discovery-backend"
+      },
+      "capabilityClosure": [],
+      "catalogLock": {
+        "allocationBaselineDigest": "d1e8b43ace03b4cc982a977032343cda652928daa3a1ce732f4533104df765d4",
+        "backendCatalogDigest": "09b5def463f496e0086bcb33231ce26154c9cc4d2eb0a7e9da4965ae06f030b9",
+        "capabilityDigests": {
+          "assets": "5785ec8e7b378125c297698cc5fbef4dc3bae01397ff05a4b4b093ab7eb8d347",
+          "auth.oauth": "345fc68ee36413751633b387c3a81e646f30113a6efb7daf845bd13d02719a27",
+          "auth.pin": "5ddf075df9bf4970a5c49514c0fcf1e70b2feea0268703c2a254ba0ae1a30576",
+          "config.versioned": "516e7a5dec2b0bcc72e30ab514953742b3949924a68580aff0fb301ddd3e28f3",
+          "connector.github-public-repository": "d3facf1f418d4a6820b53f17bd2a6d8bcfe16361ec90c2351f97078a2f7f143c",
+          "connector.github-repository-content": "51da25084a28508c72121d2f96d1dba1b2ec0727d8bd6ac853af0d0ef73a6525",
+          "images": "3b29d8357fa2421f008cc8b6a765171b2b7ba7b80d1386b406cd911517db0f41",
+          "ingest": "cff6cecedd2a3898e915ce2ed607af68ec32e05b017eb26d37598cb34268b8a6",
+          "model": "ee5936dcb9dee84bb9168960c09f51c44a5d98326bdc595890a4868ed7545be2",
+          "model.failover": "3dbd581f4d5ba460d2ed82bb09956758c09f7794f487f6b27f0f79e30c61ed5f",
+          "model.optional": "0f2920b9c3600018cbd105afe750bbc4b7e993937826f4a26d545673d2babea8",
+          "model.spend-cap": "fe5a93e3806fced98c494bc3c3afe7ecbc2220ed1fe319897d26da1cf49b10ca",
+          "question-bank": "21f067dfd7bfbff5dab3eded8f2de887c16cd23d595468b026df4c9d5a8331b1",
+          "refresh": "ce043ab835e3d3abaa7da21503feafecf44beedd718bf9cafde5bbeedf42c0f5",
+          "retention": "99449be0f1fa3a0637903ef0730915cade95cd808715a817811f0345f70cc034",
+          "seed": "1f96b1db026a0ea943b294316c82bde36fa83524927e503d2540272e4672e02b",
+          "semantic.review": "738538b77a0d1f90fb6acfc253567b13b83dced7ac326d09e3f566e432c371d8",
+          "store.d1": "fb98a95d86c0605fee3fab368867dc3b6273fd9303cbe8c2e02ef47ba5085a0d",
+          "store.memory": "c360bc0ed963e72cf66ac75b0e0dfffffd6a3c4af32bb97cde7e6a39b6187139",
+          "store.sqlite": "9b7f6a882a59e1a6bdf618d23e3d6208623ce7fec7e0816f2572ba817627a32f",
+          "stream": "f75142657c1ccc7c944ce31b08710e378d5628d3600a10b681df01aac63494d4",
+          "trace": "e76a8b11d2b1858cecb82e58ebbbeec7cefcc27d26f46cec7f44d3adb240e163",
+          "validation": "16763de6ab01dd599619dd05612ba4cd8a3c80fa6de6405a60428dab05669966"
+        },
+        "compilerVersion": "1.36.0-p6",
+        "recipeDigests": {
+          "analytics-dashboard@1": "699331fdad504b920eb7ebf7a601133450084e75e3dfb9950d200186cc25b45a",
+          "booking-calendar@1": "a982c55f2962755933c5d530795d65113e58117270a051f7d3eb04f5bb5968ee",
+          "deploy-console@1": "23bea42057561ac6c6dcb7cbb20aea5e6476d53c9267a2a8db27491a23fb7998",
+          "inbox-triage@1": "58d18c8b918a2933a6addcaa23505a2f9d7e8ebd8e0b19a6a75c301c03c88aee",
+          "spreadsheet@1": "bac564fd2d17ded61013b4709b3f775c4f258aa209da2738d2841e75b3c015f6"
+        },
+        "schemaVersion": 1,
+        "shapeDigests": {
+          "shape:calendar@1": "48863a0a81728123ef7405d19bc56ca2f9875b145b3d7c5c6819a9b5cf5c70e8",
+          "shape:canvas@1": "c23cd107318de16467b7fb38c6ab73a79857325979b5dfec88cd7b86d547f083",
+          "shape:chart@1": "54f83cfe235ff874ac91765e96c099f5720a4f6b6f7b93f77bc188b60a9fcef5",
+          "shape:chat@1": "e9e2d8900b920c887e22f0e7f5af82b863ebbab118403ad55330b5d4692d10b2",
+          "shape:console@1": "e3787b00b3e01f1b26a98cd764aa9c9d770dee19e488d138f85146b5522e9293",
+          "shape:detail@1": "3618d25fd00f2742b774c0e1e9f137cacaeb6dcd84780ab1ac6f079a32e01fd2",
+          "shape:discovery@1": "66773ae43e2dac324f1d04261b2dcfdb54fd21e9ab56008411ae4ef4f113b435",
+          "shape:form@1": "2b5b35d799924d7958cc09323476e836e6759c61bf437fba46f75063c05abab3",
+          "shape:list@1": "8b2d78c24642eaf7df23096606169bb9a2ef2794632187b6ec271234786ae5de",
+          "shape:metrics@1": "00bd3a5a59f0408fddab6de6f5d3d2b348e38e41fdeadd8c1824d4afd4032bf3",
+          "shape:table@1": "c964849ded424140fc0f3ce12ac56edfaece7a1c5abe2f7798c3c6107b69f0af",
+          "shape:view@1": "5d9fb017ac6edeb72a49cdc6e3379d86f23ee5dba6333c7b45f1401aaf502386"
+        },
+        "snapshotSha256": "ba9f81c33d7b5e68590871d55d9e42fcc2f03e59c3265591cb2d6e612ee16527",
+        "targetMatrixDigest": "27087dc7636b0e8d70d4f62b841bfd88c64d051fe919ccfc68d9edfffc7cf8b0"
+      },
+      "domain": {
+        "entity": {
+          "identityField": "id",
+          "name": "DiscoveryRun",
+          "pluralName": "DiscoveryRuns"
+        },
+        "fields": [
+          {
+            "constraints": {},
+            "id": "id",
+            "key": "id",
+            "kind": "text",
+            "label": "Run ID",
+            "required": true
+          }
+        ],
+        "operations": [],
+        "schemaVersion": 1
+      },
+      "identity": {
+        "backendTag": "site-discovery-backend",
+        "bundleName": "site-discovery.js",
+        "frontTags": [
+          "site-discovery-discovery"
+        ],
+        "packageName": "@microdots/site-discovery",
+        "port": 3193
+      },
+      "provenance": {
+        "client": "cli",
+        "selectedBy": "caller"
+      },
+      "schemaVersion": 2,
+      "slug": "site-discovery",
+      "surfaces": [
+        {
+          "parameters": {
+            "title": "Site Discovery"
+          },
+          "shape": "shape:discovery@1",
+          "tag": "site-discovery-discovery"
+        }
+      ],
+      "target": {
+        "acknowledgedConsequences": [],
+        "id": "self-bun@1",
+        "optionalEnvironment": [
+          "AI_GATEWAY_API_TOKEN",
+          "ANTHROPIC_API_KEY",
+          "CLOUDFLARE_ACCOUNT_ID",
+          "CLOUDFLARE_AI_GATEWAY_ID",
+          "CLOUDFLARE_BROWSER_API_TOKEN",
+          "DISCOVERY_ATTEMPT_RESERVATION_USD",
+          "DISCOVERY_FIXTURES",
+          "DISCOVERY_MODEL",
+          "DISCOVERY_MONTHLY_LIMIT_USD",
+          "DISCOVERY_OWNER_TOKEN",
+          "DISCOVERY_RUN_LIMIT_USD",
+          "DISCOVERY_STATE_DIR"
+        ],
+        "proof": "live",
+        "provider": "self",
+        "requiredArtifacts": [
+          "service/main.ts"
+        ],
+        "requiredBindings": [],
+        "requiredSecrets": [],
+        "runtime": "bun",
+        "support": "supported"
+      }
+    }
+  ],
+  "schemaVersion": 2,
+  "topology": {
+    "host": {
+      "id": "site-discovery-mini-host",
+      "label": "DiscoveryRun mini-host",
+      "ownedInputs": []
+    },
+    "routes": [
+      {
+        "label": "DiscoveryRun",
+        "mounts": [
+          {
+            "id": "front-1",
+            "order": 0,
+            "slotId": "front-1-slot",
+            "tag": "site-discovery-discovery",
+            "values": {
+              "api-url": "http://localhost:3193"
+            }
+          },
+          {
+            "id": "backend-surface",
+            "order": 1,
+            "slotId": "backend-slot",
+            "tag": "site-discovery-backend",
+            "values": {
+              "api-url": "http://localhost:3193"
+            }
+          }
+        ],
+        "path": "/",
+        "sectionIds": [
+          "fronts",
+          "backend"
+        ],
+        "title": "DiscoveryRun workspace"
+      }
+    ],
+    "slotManifest": {
+      "slots": [
+        {
+          "capacity": 1,
+          "id": "front-1-slot",
+          "kind": "band",
+          "row": 1
+        },
+        {
+          "capacity": 1,
+          "id": "backend-slot",
+          "kind": "band",
+          "row": 2
+        }
+      ],
+      "theme": {
+        "name": "@bespokeagentics/microdots-theme",
+        "version": "0.1.1"
+      }
+    },
+    "watch": [],
+    "wires": []
+  }
+}

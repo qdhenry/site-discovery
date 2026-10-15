@@ -1,0 +1,10 @@
+{
+  "nodes": [
+    {
+      "id": "backend-root",
+      "parameters": {},
+      "primitive": "action-bar@1"
+    }
+  ],
+  "rootId": "backend-root"
+}

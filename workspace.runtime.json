@@ -1,0 +1,20 @@
+{
+  "authoringSource": "catalog",
+  "bundleFile": "site-discovery.js",
+  "capabilities": [],
+  "elements": [
+    {
+      "attributes": {},
+      "presentation": "primary",
+      "tag": "site-discovery-discovery"
+    },
+    {
+      "attributes": {},
+      "presentation": "primary",
+      "tag": "site-discovery-backend"
+    }
+  ],
+  "previewService": "service-main",
+  "runtime": "bun",
+  "schemaVersion": 1
+}

@@ -1,0 +1,33 @@
+{
+  "capabilities": [],
+  "catalogSnapshotSha256": "ba9f81c33d7b5e68590871d55d9e42fcc2f03e59c3265591cb2d6e612ee16527",
+  "migrations": [],
+  "schemaVersion": 1,
+  "target": {
+    "acknowledgedConsequences": [],
+    "id": "self-bun@1",
+    "optionalEnvironment": [
+      "AI_GATEWAY_API_TOKEN",
+      "ANTHROPIC_API_KEY",
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_AI_GATEWAY_ID",
+      "CLOUDFLARE_BROWSER_API_TOKEN",
+      "DISCOVERY_ATTEMPT_RESERVATION_USD",
+      "DISCOVERY_FIXTURES",
+      "DISCOVERY_MODEL",
+      "DISCOVERY_MONTHLY_LIMIT_USD",
+      "DISCOVERY_OWNER_TOKEN",
+      "DISCOVERY_RUN_LIMIT_USD",
+      "DISCOVERY_STATE_DIR"
+    ],
+    "proof": "live",
+    "provider": "self",
+    "requiredArtifacts": [
+      "service/main.ts"
+    ],
+    "requiredBindings": [],
+    "requiredSecrets": [],
+    "runtime": "bun",
+    "support": "supported"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "description": "defineMicroDot — custom-element registration for Foldkit MicroDots, with the mount-container invariant and render gate. Raw TypeScript source; consume with Bun or Vite.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./render-gate": "./src/renderGate.ts"
+  },
+  "license": "Apache-2.0",
+  "main": "./src/index.ts",
+  "name": "@bespokeagentics/microdots-element",
+  "peerDependencies": {
+    "effect": "4.0.0-rc.112",
+    "foldkit": "0.158.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "directory": "packages/microdots-element",
+    "type": "git",
+    "url": "https://github.com/qdhenry/site-discovery.git"
+  },
+  "type": "module",
+  "version": "0.3.0"
+}

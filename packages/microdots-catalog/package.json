@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "@bespokeagentics/microdots-theme": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "license": "Apache-2.0",
+  "main": "./src/index.ts",
+  "name": "@bespokeagentics/microdots-catalog",
+  "private": true,
+  "repository": {
+    "directory": "packages/microdots-catalog",
+    "type": "git",
+    "url": "https://github.com/qdhenry/site-discovery.git"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}

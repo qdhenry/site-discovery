@@ -1,0 +1,19 @@
+{
+  "loaders": [
+    {
+      "exportName": "makeElement",
+      "flags": {
+        "apiUrl": "$BUILDER_SERVICE_URL"
+      },
+      "modulePath": "src/app.authoring-backend.ts",
+      "readiness": {
+        "attribute": "data-builder-render-state",
+        "failureValue": "error",
+        "minimumSuccessfulRpcResponses": 1,
+        "selector": "[data-builder-render-state]",
+        "successValue": "ready"
+      }
+    }
+  ],
+  "schemaVersion": 2
+}

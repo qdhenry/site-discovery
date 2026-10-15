@@ -1,0 +1,1217 @@
+/* ============================================================
+   BespokeAgentics — Tailwind v4 theme map + class-scoped helpers
+
+   Import AFTER `tailwindcss`. `@theme` blocks merge in SOURCE ORDER, so placed
+   before it, every key that collides with a Tailwind default (--radius-*,
+   --shadow-*, --font-*, --color-*) silently loses the merge and the page just
+   looks subtly wrong. `stylesheets.test.ts` asserts the prologue order.
+
+   `inline` so the values stay live `var()` references rather than being frozen
+   at build time — that is what makes `[data-theme]` switching work at all.
+
+   Everything in this file is either an `@theme` entry or a CLASS-scoped rule.
+   There are no bare-tag selectors here on purpose: this sheet ships inside every
+   MicroDot bundle and is injected into whatever document loads it, so a `p {}`
+   rule would restyle a host we do not own. Bare-tag defaults live in `page.css`.
+   ============================================================ */
+
+/* Make `dark:` follow `[data-theme="dark"]` rather than the OS setting, and
+   match the marked element itself as well as its descendants.
+
+   In practice almost nothing should need this variant: every value flows through
+   a custom property, so `bg-surface` is already correct in both themes. Reach
+   for `dark:` only when a rule genuinely has no token behind it. */
+/* Client themes compose identity and mode into one reserved value (`acme-dark`).
+   Keep exact `dark` for existing hosts and admit only the `-dark` suffix for
+   named sets; near matches such as `darkish` must stay light. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *, [data-theme$='-dark'], [data-theme$='-dark'] *));
+
+@theme inline {
+  /* ---------- color ----------
+     NOTE the two names that invert intuition, because they will otherwise be
+     swapped on sight:
+       `text-fg-muted`  -> --text-secondary  (7:1, PROSE IS LEGAL)
+       `text-fg-subtle` -> --text-muted      (4.5:1, NEVER A PARAGRAPH)
+     The mechanical sweep `slate-400 -> fg-subtle`, `slate-500/600 -> fg-muted`
+     lands correctly. Do not "fix" it. */
+  --color-fg: var(--text-primary);
+  --color-fg-muted: var(--text-secondary);
+  --color-fg-subtle: var(--text-muted);
+  --color-fg-heading: var(--text-heading);
+  --color-fg-link: var(--text-link);
+  --color-fg-link-hover: var(--text-link-hover);
+  --color-fg-on-brand: var(--text-on-brand);
+  --color-fg-wordmark: var(--text-wordmark);
+  --color-fg-accent: var(--text-accent);
+  --color-fg-success: var(--text-success);
+  --color-fg-warning: var(--text-warning);
+  --color-fg-error: var(--text-error);
+
+  --color-surface: var(--surface-default);
+  --color-surface-page: var(--surface-page);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-overlay: var(--surface-overlay);
+
+  --color-border: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-accent: var(--border-accent);
+  --color-border-strong: var(--border-strong);
+
+  --color-accent: var(--accent-default);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-muted: var(--accent-muted);
+  --color-accent-label: var(--accent-label);
+  --color-accent-fill: var(--accent-fill);
+  --color-accent-fill-hover: var(--accent-fill-hover);
+
+  --color-int-ghost: var(--int-ghost);
+  --color-int-subtle: var(--int-subtle);
+  --color-int-hover: var(--int-hover);
+  --color-int-active: var(--int-active);
+  --color-int-glow: var(--int-glow);
+
+  --color-status-success-fg: var(--status-success-fg);
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-warning-fg: var(--status-warning-fg);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-error-fg: var(--status-error-fg);
+  --color-status-error-bg: var(--status-error-bg);
+  --color-status-error-border: var(--status-error-border);
+  --color-status-info-fg: var(--status-info-fg);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-border: var(--status-info-border);
+
+  /* The neutral mark: a dot for draft/queued/paused, never a glyph. */
+  --color-mark-neutral: var(--mark-neutral);
+
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+
+  --color-green: var(--green);
+  --color-green-deep: var(--green-deep);
+  --color-amber: var(--amber);
+  --color-amber-deep: var(--amber-deep);
+  --color-red: var(--red);
+  --color-red-deep: var(--red-deep);
+
+  /* ---------- font ---------- */
+  --font-body: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+  --font-weight-light: var(--fw-light);
+  --font-weight-regular: var(--fw-regular);
+  --font-weight-medium: var(--fw-medium);
+  --font-weight-semibold: var(--fw-semibold);
+  --font-weight-bold: var(--fw-bold);
+
+  /* ---------- text ----------
+     `--text-xs` and `--text-sm` are DELIBERATELY ABSENT. The brand remaps them
+     to 0.55rem (8.8px) and 0.68rem (10.9px) — a section-number size and a helper
+     size, not general-purpose small text. Porting them would resize every
+     `text-xs`/`text-sm` in the repo at once, and NO test can see a class change:
+     every scene test selects by tag, role or text. Reach for `text-caption`
+     (11.5px), `text-body-s` (13.1px) or `text-body-m` (14.1px) instead. The raw
+     `--fs-xs`/`--fs-sm` tokens still exist in tokens.css for the rare decorative
+     case. `tokens.test.ts` fails if either key reappears here. */
+  --text-caption: var(--fs-caption);
+  --text-body-s: var(--fs-body-s);
+  --text-body-m: var(--fs-body-m);
+  --text-body-l: var(--fs-body-l);
+  --text-button: var(--fs-button);
+  --text-button-sm: var(--fs-button-sm);
+  --text-button-lg: var(--fs-button-lg);
+  --text-input: var(--fs-input);
+  --text-label: var(--fs-label);
+  --text-display-m: var(--fs-display-m);
+  --text-display-l: var(--fs-display-l);
+  --text-display-xl: var(--fs-display-xl);
+  --text-mono: var(--fs-mono);
+  --text-mono-sm: var(--fs-mono-sm);
+
+  /* ---------- leading ---------- */
+  --leading-tight: var(--lh-tight);
+  --leading-display: var(--lh-display);
+  --leading-heading: var(--lh-heading);
+  --leading-body: var(--lh-body);
+  --leading-relaxed: var(--lh-relaxed);
+  --leading-code: var(--lh-code);
+
+  /* ---------- tracking ----------
+     `tracking-tight` is POSITIVE here (+0.02em) — it is the button tracking, not
+     a heading tightener. */
+  --tracking-tight: var(--ls-tight);
+  --tracking-normal: var(--ls-normal);
+  --tracking-wide: var(--ls-wide);
+  --tracking-wider: var(--ls-wider);
+  --tracking-widest: var(--ls-widest);
+  --tracking-ultra: var(--ls-ultra);
+
+  /* ---------- radius ---------- */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
+
+  /* ---------- spacing ----------
+     Only the named gutter. The numeric `--spacing-1..24` overrides the source
+     ships are DELIBERATELY ABSENT: at a 16px root they are numerically a no-op,
+     but they would freeze boxes in px while type scales in rem, and they cover
+     only 12 of the steps — so `py-0.5`, `gap-1.5` and `leading-5` would keep
+     resolving through Tailwind’s `--spacing` multiplier, making the scale
+     non-uniform in UNITS while looking identical. `tokens.test.ts` fails if a
+     `--spacing-<number>` key appears here. */
+  --spacing-gutter: var(--gutter);
+
+  /* ---------- shadow ---------- */
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-card: var(--shadow-card);
+  --shadow-glow: var(--shadow-glow);
+  --shadow-focus: var(--shadow-focus);
+  --shadow-button-hover: var(--shadow-button-hover);
+}
+
+/* ============================================================
+   Semantic typography helpers — CLASS selectors only.
+
+   In `tokens-base` so a Tailwind utility still beats them: `class="overline
+   text-fg-subtle"` overrides the accent colour below, which is exactly how the
+   sweep rations the brand blue to one overline per MicroDot.
+   ============================================================ */
+@layer tokens-base {
+  .t-display-xl {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--fs-display-xl);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.03em;
+    color: var(--text-heading);
+  }
+
+  .t-display-l {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--fs-display-l);
+    line-height: var(--lh-display);
+    letter-spacing: -0.02em;
+    color: var(--text-heading);
+  }
+
+  .t-display-m {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-display-m);
+    line-height: var(--lh-heading);
+    letter-spacing: -0.01em;
+    color: var(--text-heading);
+  }
+
+  .t-body-l {
+    font-family: var(--font-body);
+    font-weight: var(--fw-light);
+    font-size: var(--fs-body-l);
+    line-height: var(--lh-relaxed);
+    color: var(--text-secondary);
+  }
+
+  .t-body-m {
+    font-family: var(--font-body);
+    font-weight: var(--fw-light);
+    font-size: var(--fs-body-m);
+    line-height: var(--lh-body);
+    color: var(--text-secondary);
+  }
+
+  .t-body-s {
+    font-family: var(--font-body);
+    font-weight: var(--fw-regular);
+    font-size: var(--fs-body-s);
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  /* The widget-identity label. ONE per MicroDot — it is the only place the
+     brand blue is spent on a label, which is what keeps the accent rationed.
+     Every other micro-label is
+     `text-caption font-medium uppercase tracking-widest text-fg-subtle`. */
+  .t-caption-label,
+  .overline {
+    font-family: var(--font-body);
+    font-weight: var(--fw-medium);
+    font-size: var(--fs-caption);
+    line-height: 1.4;
+    letter-spacing: var(--ls-widest);
+    text-transform: uppercase;
+    color: var(--accent-label);
+  }
+
+  .t-wordmark {
+    font-family: var(--font-body);
+    font-weight: var(--fw-semibold);
+    font-size: 1.4rem;
+    line-height: 1;
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--text-wordmark);
+  }
+
+  .t-button {
+    font-family: var(--font-body);
+    font-weight: var(--fw-medium);
+    font-size: var(--fs-button);
+    line-height: 1.4;
+    letter-spacing: var(--ls-tight);
+  }
+
+  .t-label {
+    font-family: var(--font-body);
+    font-weight: var(--fw-medium);
+    font-size: var(--fs-label);
+    line-height: 1.4;
+    color: var(--text-secondary);
+  }
+
+  .t-code {
+    font-family: var(--font-mono);
+    font-weight: var(--fw-regular);
+    font-size: var(--fs-mono-sm);
+    line-height: var(--lh-code);
+    color: var(--text-primary);
+  }
+}
+
+/* ============================================================
+   The ONLY element rules a MicroDot’s bundle carries.
+
+   Scoped to `[data-microdot]`, the attribute `defineMicroDot` sets on the
+   custom element before it embeds, so none of this can reach a host’s own
+   markup — and everything the runtime renders inside inherits it.
+
+   `page.css` carries the unscoped equivalents for the two first-party pages.
+   ============================================================ */
+@layer tokens-base {
+  [data-microdot] {
+    /* A custom element is `display: inline` by default, which is not what any
+       slot expects. */
+    display: block;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: var(--fs-body-m);
+    font-weight: var(--fw-light);
+    line-height: var(--lh-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* The brand’s global focus ring. Having it here means NO view needs a
+     per-site `focus-visible:` class.
+
+     It is an outline rather than the rulebook’s `--border-accent` +
+     `--shadow-focus` pair because in the light theme those are
+     `rgba(brand-600, .15)` and a 3% wash — against `--border-default` #e2e8f0
+     that delta is close to invisible, and the code this replaces had a real 2px
+     ring. A deliberate addition, not an oversight. */
+  [data-microdot]
+    :where(
+      a,
+      button,
+      input,
+      textarea,
+      select,
+      summary,
+      [tabindex]
+    ):focus-visible {
+    outline: 2px solid var(--accent-default);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  /* Chrome paints #e8f0fe over an autofilled field and it survives every
+     background utility — a glaring white box in the dark theme.
+     `microdots/intake` has name/email/tel fields, so this is reachable in
+     one click. */
+  [data-microdot] input:-webkit-autofill,
+  [data-microdot] input:-webkit-autofill:hover,
+  [data-microdot] input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text-primary);
+    box-shadow: inset 0 0 0 100px var(--surface-page);
+    caret-color: var(--text-primary);
+  }
+}
+
+/* ============================================================
+   THE MICRODOTS WEB DESIGN SYSTEM’S SHARED COMPONENTS — `mdw-*`.
+
+   Product AND marketing. These rules were ported from the design system's
+   `components/bundle.css` into apps/website/src/styles/site.css on 2026-10-01
+   and moved HERE on 2026-10-02, when the Platform adopted the same system
+   (wiki/plans/active/platform-ui-web-design-system-overhaul.md, R4). One
+   declaration now serves the marketing site and every MicroDot, so the two
+   surfaces cannot drift. Values unchanged from the site’s port, including its
+   one colour departure: error TEXT reads `--text-error` (reason at
+   `.mdw-btn-danger`).
+
+   WHY THIS IS NOT A SHARED CLASS CONSTANT ACROSS DOTS. The invariant
+   `each-bundle-is-self-sufficient` forbids one dot importing another’s class
+   strings. This file is already compiled into EVERY bundle by its own
+   `styles.css`, so each bundle still carries every rule it uses; a dot writes
+   its own local view recipe over these classes.
+
+   CLASS selectors only, like the rest of this file: it is injected into
+   documents we do not own. Marketing-only pieces (confetti, marker swipe, the
+   cobalt band and its buttons, burst, nav, hero, sections, cards, footer) stay
+   in site.css. Light flair is product UI by ruling R2: the dot mark, live
+   dots and the gate pulse are here.
+   ============================================================ */
+@keyframes mdw-hop {
+  0%,
+  55%,
+  100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-6px);
+  }
+  40% {
+    transform: translateY(1px);
+  }
+}
+
+@keyframes mdw-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--flair-amber) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--flair-amber) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--flair-amber) 0%, transparent);
+  }
+}
+
+@layer components {
+  .mdw-hop {
+    animation: mdw-hop 1.6s ease-in-out infinite;
+  }
+  /* ── brand ─────────────────────────────────────────────────────────────── */
+  .mdw-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    line-height: 1;
+  }
+  .mdw-brand-grid {
+    display: inline-grid;
+    grid-template-columns: repeat(3, 5px);
+    gap: 3px;
+    transform: rotate(-8deg);
+  }
+  .mdw-brand-grid > span {
+    display: block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--brand-600);
+  }
+  .mdw-brand-word {
+    font-family: var(--font-body);
+    font-size: 20px;
+    font-weight: 650;
+    letter-spacing: -0.8px;
+    color: var(--text-wordmark);
+  }
+  .mdw-dotmark {
+    display: inline-grid;
+    transform: rotate(-8deg);
+    flex: none;
+  }
+  .mdw-dotmark > span {
+    display: block;
+    border-radius: 50%;
+  }
+  .mdw-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.4;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .mdw-eyebrow-accent {
+    color: var(--text-accent);
+  }
+  .mdw-eyebrow-muted {
+    color: var(--text-muted);
+  }
+  /* ── buttons ───────────────────────────────────────────────────────────── */
+  .mdw-btn {
+    font: inherit;
+    line-height: 1.4;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background 0.15s,
+      border-color 0.15s,
+      transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .mdw-btn:hover {
+    text-decoration: none;
+  }
+  .mdw-btn-lg {
+    font-size: 16px;
+    padding: 13px 21px;
+    border-radius: var(--radius-cta);
+  }
+  .mdw-btn-md {
+    font-size: 14px;
+    padding: 9px 15px;
+    border-radius: var(--radius-control);
+  }
+  .mdw-btn-sm {
+    font-size: 13px;
+    padding: 6px 11px;
+    border-radius: var(--radius-row-action);
+  }
+  .mdw-btn-primary {
+    background: var(--accent-fill);
+    color: var(--text-on-brand);
+    font-weight: 600;
+  }
+  .mdw-btn-primary:hover {
+    background: var(--accent-fill-hover);
+    color: var(--text-on-brand);
+  }
+  .mdw-btn-secondary {
+    background: var(--surface-default);
+    border-color: var(--border-default);
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .mdw-btn-secondary:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+  .mdw-btn-sm.mdw-btn-secondary {
+    background: transparent;
+  }
+  /* `--text-error`, not `--status-error-fg`: the one colour departure from the
+     bundle. The bundle's error ink measures 4.3:1 on its own error tint in the
+     light theme, under the 4.5:1 every text pair has to meet. `--text-error`
+     is the theme package's glyph-tuned twin (5.0:1), and in the dark theme the
+     two are the same value. */
+  .mdw-btn-danger {
+    background: transparent;
+    border-color: var(--status-error-border);
+    color: var(--text-error);
+    font-weight: 500;
+  }
+  .mdw-btn-text {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: var(--text-accent);
+    font-weight: 600;
+  }
+  .mdw-btn-text:hover {
+    color: var(--text-link-hover);
+  }
+  .mdw-btn:disabled,
+  .mdw-btn[aria-disabled='true'] {
+    opacity: 0.48;
+    cursor: not-allowed;
+  }
+  .mdw-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .mdw-actions-center {
+    justify-content: center;
+  }
+
+  /* ── status ────────────────────────────────────────────────────────────── */
+  .mdw-pill {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .mdw-pill-success {
+    color: var(--status-success-fg);
+    background: var(--status-success-bg);
+  }
+  .mdw-pill-warning {
+    color: var(--status-warning-fg);
+    background: var(--status-warning-bg);
+  }
+  .mdw-pill-error {
+    color: var(--text-error);
+    background: var(--status-error-bg);
+  }
+  .mdw-pill-info {
+    color: var(--status-info-fg);
+    background: var(--status-info-bg);
+  }
+  .mdw-pill-neutral {
+    color: var(--text-muted);
+    background: var(--int-subtle);
+  }
+  .mdw-pill-bordered.mdw-pill-success {
+    border-color: var(--status-success-border);
+  }
+  .mdw-pill-bordered.mdw-pill-warning {
+    border-color: var(--status-warning-border);
+  }
+  .mdw-pill-bordered.mdw-pill-error {
+    border-color: var(--status-error-border);
+  }
+  .mdw-pill-bordered.mdw-pill-info {
+    border-color: var(--status-info-border);
+  }
+  .mdw-pill-bordered.mdw-pill-neutral {
+    border-color: var(--border-default);
+  }
+  .mdw-who {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .mdw-who-human {
+    color: var(--status-warning-fg);
+    background: var(--status-warning-bg);
+    border-color: var(--status-warning-border);
+  }
+  .mdw-who-agents {
+    color: var(--text-muted);
+    background: transparent;
+    border-color: var(--border-default);
+  }
+  .mdw-livedots {
+    display: inline-flex;
+    flex: none;
+  }
+  .mdw-livedots > span {
+    display: block;
+    border-radius: 50%;
+  }
+  .mdw-gate-dot {
+    display: inline-block;
+    flex: none;
+    border-radius: 50%;
+    background: var(--flair-amber);
+    animation: mdw-pulse 1.8s ease-out infinite;
+  }
+
+  /* ── tabs ──────────────────────────────────────────────────────────────── */
+  .mdw-tabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .mdw-tab {
+    font: inherit;
+    line-height: 1.4;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-weight: 500;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
+  }
+  .mdw-tabs-segmented {
+    padding: 3px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-cta);
+    background: var(--surface-default);
+  }
+  .mdw-tabs-segmented .mdw-tab {
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: var(--radius-row-action);
+  }
+  .mdw-tabs-segmented .mdw-tab:hover {
+    background: var(--int-hover);
+  }
+  .mdw-tabs-segmented .mdw-tab.is-active {
+    background: var(--int-active);
+    color: var(--text-accent);
+  }
+  .mdw-tabs-pill .mdw-tab {
+    font-size: 14px;
+    padding: 9px 16px;
+    border-radius: var(--radius-pill);
+    border-color: var(--border-default);
+    background: var(--surface-default);
+  }
+  .mdw-tabs-pill .mdw-tab:hover {
+    border-color: var(--border-strong);
+  }
+  .mdw-tabs-pill .mdw-tab.is-active {
+    background: var(--accent-fill);
+    border-color: var(--accent-fill);
+    color: var(--text-on-brand);
+  }
+  .mdw-tabs-env {
+    gap: 6px;
+  }
+  .mdw-tabs-env .mdw-tab {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    border-color: var(--border-default);
+  }
+  .mdw-tabs-env .mdw-tab.is-active {
+    background: var(--int-active);
+    color: var(--text-accent);
+    border-color: var(--border-accent);
+  }
+
+  /* ── forms ─────────────────────────────────────────────────────────────── */
+  .mdw-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .mdw-control {
+    font: inherit;
+    font-size: 16px;
+    line-height: 1.4;
+    padding: 12px 14px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-control);
+    background: var(--surface-page);
+    color: var(--text-primary);
+  }
+  .mdw-control::placeholder {
+    color: var(--text-muted);
+  }
+  .mdw-control:hover {
+    border-color: var(--border-strong);
+  }
+  textarea.mdw-control {
+    resize: vertical;
+    min-height: 96px;
+  }
+
+  /* ── content ───────────────────────────────────────────────────────────── */
+  .mdw-callout {
+    border: 1px solid;
+    border-radius: var(--radius-cta);
+    padding: 16px 18px;
+    font-size: 15px;
+    color: var(--text-primary);
+  }
+  .mdw-callout-info {
+    background: var(--status-info-bg);
+    border-color: var(--status-info-border);
+  }
+  .mdw-callout-success {
+    background: var(--status-success-bg);
+    border-color: var(--status-success-border);
+  }
+  .mdw-callout-warning {
+    background: var(--status-warning-bg);
+    border-color: var(--status-warning-border);
+  }
+  .mdw-callout-error {
+    background: var(--status-error-bg);
+    border-color: var(--status-error-border);
+  }
+  .mdw-code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    background: var(--int-subtle);
+    padding: 2px 6px;
+    border-radius: var(--radius-code);
+    color: var(--text-primary);
+    /* A path or a tag is one unbreakable word; on a phone it has to wrap
+       somewhere rather than push the page sideways. */
+    overflow-wrap: anywhere;
+  }
+  .mdw-codeblock {
+    font-family: var(--font-mono);
+    background: var(--surface-default);
+    border: 1px solid var(--border-default);
+  }
+  .mdw-codeblock-command {
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 16px 18px;
+    border-radius: var(--radius-cta);
+    color: var(--text-primary);
+  }
+  .mdw-codeblock-contract {
+    font-size: 13px;
+    line-height: 1.8;
+    padding: 22px 24px;
+    border-radius: var(--radius-code-card);
+    color: var(--text-secondary);
+    box-shadow: var(--shadow-md);
+  }
+  .mdw-kw {
+    color: var(--text-accent);
+  }
+  .mdw-comment {
+    color: var(--text-muted);
+  }
+
+  /* ── mock UI ───────────────────────────────────────────────────────────── */
+  .mdw-window {
+    background: var(--surface-default);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    color: var(--text-primary);
+  }
+  .mdw-window-flat {
+    box-shadow: none;
+  }
+  .mdw-window-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-default);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .mdw-window-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-heading);
+  }
+  .mdw-window-body {
+    display: flex;
+    flex-direction: column;
+  }
+  .mdw-window-foot {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .mdw-row {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 16px;
+    align-items: center;
+  }
+  .mdw-row:last-child {
+    border-bottom: 0;
+  }
+  .mdw-row-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary);
+  }
+  .mdw-row-meta {
+    grid-column: 1;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .mdw-row-error {
+    background: var(--status-error-bg);
+  }
+  .mdw-row-error .mdw-row-meta {
+    color: var(--text-secondary);
+  }
+  .mdw-wire {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 15px;
+    color: var(--text-primary);
+  }
+  .mdw-wire:last-child {
+    border-bottom: 0;
+  }
+  .mdw-wire-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--status-success-fg);
+    flex: none;
+  }
+  .mdw-wire-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .mdw-wire-text b {
+    font-weight: 600;
+  }
+  .mdw-wire-id {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .mdw-wire.is-broken {
+    background: var(--status-error-bg);
+  }
+  .mdw-wire.is-broken .mdw-wire-dot {
+    background: var(--status-error-fg);
+  }
+  .mdw-wire-framed {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-code-card);
+    background: var(--surface-default);
+    padding: 18px 24px;
+  }
+  .mdw-wire-framed:last-child {
+    border-bottom: 1px solid var(--border-default);
+  }
+  .mdw-wire-framed.is-broken {
+    border-color: var(--status-error-border);
+    background: var(--status-error-bg);
+  }
+  .mdw-phase {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1.4fr) 120px;
+    gap: 24px;
+    padding: 28px 0;
+    border-bottom: 1px solid var(--border-default);
+    align-items: baseline;
+  }
+  .mdw-phase-n {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  .mdw-phase-name {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--text-heading);
+  }
+  .mdw-phase-desc {
+    margin: 0;
+    color: var(--text-secondary);
+  }
+  .mdw-phase .mdw-who {
+    justify-self: end;
+  }
+  .mdw-host {
+    background: var(--surface-default);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-card);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .mdw-host-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+  .mdw-host-chrome {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-mock-row);
+    padding: 12px 14px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .mdw-host-grid {
+    display: grid;
+    gap: 12px;
+  }
+  .mdw-slot {
+    border: 1px dashed var(--border-accent);
+    background: var(--int-subtle);
+    border-radius: var(--radius-mock-row);
+    padding: 14px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .mdw-slot-name {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-accent);
+  }
+  .mdw-slot-part {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .mdw-slot-note {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .mdw-slot-empty {
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-mock-row);
+    padding: 12px 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+}
+
+/* MARKUP-ONLY DEFAULTS for the three flair marks, so a Foldkit view can render
+   one with plain child spans and no inline style. The design system sets each
+   disc inline from script; a view in a MicroDot has no script to run, so the
+   same values live here by position. An inline style (the marketing site's
+   Astro components) still wins over these. */
+@layer components {
+  /* DotMark: a 3×3 grid of 8px discs, 4px gap, −8°, seven inks in the design
+     system's order (cobalt, flare, cyan, amber, violet, crimson, jade,
+     cobalt, amber), hopping on a diagonal stagger. */
+  .mdw-dotmark:not([style]) {
+    grid-template-columns: repeat(3, 8px);
+    gap: 4px;
+  }
+  .mdw-dotmark > span:not([style]) {
+    width: 8px;
+    height: 8px;
+  }
+  .mdw-dotmark > span:nth-child(1):not([style]),
+  .mdw-dotmark > span:nth-child(8):not([style]) {
+    background: var(--flair-cobalt);
+  }
+  .mdw-dotmark > span:nth-child(2):not([style]) {
+    background: var(--flair-flare);
+  }
+  .mdw-dotmark > span:nth-child(3):not([style]) {
+    background: var(--flair-cyan);
+  }
+  .mdw-dotmark > span:nth-child(4):not([style]),
+  .mdw-dotmark > span:nth-child(9):not([style]) {
+    background: var(--flair-amber);
+  }
+  .mdw-dotmark > span:nth-child(5):not([style]) {
+    background: var(--flair-violet);
+  }
+  .mdw-dotmark > span:nth-child(6):not([style]) {
+    background: var(--flair-crimson);
+  }
+  .mdw-dotmark > span:nth-child(7):not([style]) {
+    background: var(--flair-jade);
+  }
+  .mdw-dotmark-hop > span {
+    animation: mdw-hop 1.6s ease-in-out infinite;
+  }
+  .mdw-dotmark-hop > span:nth-child(2),
+  .mdw-dotmark-hop > span:nth-child(4) {
+    animation-delay: 0.11s;
+  }
+  .mdw-dotmark-hop > span:nth-child(3),
+  .mdw-dotmark-hop > span:nth-child(5),
+  .mdw-dotmark-hop > span:nth-child(7) {
+    animation-delay: 0.22s;
+  }
+  .mdw-dotmark-hop > span:nth-child(6),
+  .mdw-dotmark-hop > span:nth-child(8) {
+    animation-delay: 0.33s;
+  }
+  .mdw-dotmark-hop > span:nth-child(9) {
+    animation-delay: 0.44s;
+  }
+
+  /* LiveDots: three 7px discs, 5px gap, hopping 0.15s apart. `building` is
+     cobalt / flare / amber; `-agents` is cobalt / cyan / jade. */
+  .mdw-livedots:not([style]) {
+    gap: 5px;
+    align-items: center;
+  }
+  .mdw-livedots > span:not([style]) {
+    width: 7px;
+    height: 7px;
+    animation: mdw-hop 1.6s ease-in-out infinite;
+  }
+  .mdw-livedots-sm > span:not([style]) {
+    width: 5px;
+    height: 5px;
+  }
+  .mdw-livedots > span:nth-child(1):not([style]) {
+    background: var(--flair-cobalt);
+  }
+  .mdw-livedots > span:nth-child(2):not([style]) {
+    background: var(--flair-flare);
+    animation-delay: 0.15s;
+  }
+  .mdw-livedots > span:nth-child(3):not([style]) {
+    background: var(--flair-amber);
+    animation-delay: 0.3s;
+  }
+  .mdw-livedots-agents > span:nth-child(2):not([style]) {
+    background: var(--flair-cyan);
+  }
+  .mdw-livedots-agents > span:nth-child(3):not([style]) {
+    background: var(--flair-jade);
+  }
+  .mdw-who .mdw-livedots > span:not([style]) {
+    width: 5px;
+    height: 5px;
+  }
+  .mdw-gate-dot:not([style]) {
+    width: 7px;
+    height: 7px;
+  }
+
+  /* BrandMark: the three columns at 100 / 70 / 45%. */
+  .mdw-brand-grid > span:nth-child(3n + 2):not([style]) {
+    opacity: 0.7;
+  }
+  .mdw-brand-grid > span:nth-child(3n):not([style]) {
+    opacity: 0.45;
+  }
+}
+
+/* Tooltip, with no script: `class="mdw-tip" data-tip="…"` opens a short
+   explanation under the control on hover and on keyboard focus, after a 300ms
+   rest so a passing pointer never flashes it. The prototype canvas’s tip
+   (dark ink on the page colour, 280px, 13px). It SUPPLEMENTS a visible label
+   and is never the only instruction: pair it with an accessible name.
+   `mdw-tip-up` opens above; `mdw-tip-start` / `mdw-tip-end` pin it to an edge
+   for a control near the side of a pane. HTML only: an SVG element has no
+   ::after, so a diagram uses <title> or an HTML overlay. Ruling R7.
+
+   The closed tip is `display: none`, never `visibility: hidden`: a hidden but
+   laid-out box still counts as scrollable overflow, so every tip near the foot
+   of a pane grew a scrollbar on the page around it (measured on /wiring,
+   2026-10-02: 72px of phantom scroll from the band’s tab tips). The fade is a
+   delayed animation, which starts when the box is displayed. */
+@keyframes mdw-tip-in {
+  from {
+    opacity: 0;
+    translate: 0 -2px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@layer components {
+  .mdw-tip[data-tip] {
+    position: relative;
+  }
+  .mdw-tip[data-tip]::after {
+    content: attr(data-tip);
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    z-index: 120;
+    width: max-content;
+    max-width: 280px;
+    padding: 8px 12px;
+    border-radius: var(--radius-row-action);
+    background: var(--text-heading);
+    color: var(--surface-default);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-align: left;
+    text-transform: none;
+    white-space: normal;
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+  .mdw-tip[data-tip]:hover::after,
+  .mdw-tip[data-tip]:focus-visible::after {
+    display: block;
+    animation: mdw-tip-in 0.15s ease 0.3s both;
+  }
+  .mdw-tip-up[data-tip]::after {
+    top: auto;
+    bottom: calc(100% + 8px);
+  }
+  .mdw-tip-start[data-tip]::after {
+    left: 0;
+    transform: none;
+  }
+  .mdw-tip-end[data-tip]::after {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+  /* An empty tip says nothing, so it opens nothing. */
+  .mdw-tip[data-tip='']::after {
+    content: none;
+  }
+}
+
+/* PhaseRow’s four columns cannot stack by intrinsic sizing: the number stays
+   beside the name while the description and the pill drop under it. The
+   design system’s own width, 720px. */
+@media (max-width: 720px) {
+  .mdw-phase {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 8px 16px;
+  }
+  .mdw-phase-desc,
+  .mdw-phase .mdw-who {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+/* Motion: reduced motion stops the system's loops; `[data-motion='off']` does
+   the same for a review or a screenshot. */
+@media (prefers-reduced-motion: reduce) {
+  .mdw-hop,
+  .mdw-gate-dot,
+  .mdw-dotmark-hop > span,
+  .mdw-livedots > span {
+    animation: none !important;
+  }
+}
+[data-motion='off'] .mdw-hop,
+[data-motion='off'] .mdw-gate-dot,
+[data-motion='off'] .mdw-dotmark-hop > span,
+[data-motion='off'] .mdw-livedots > span {
+  animation: none !important;
+}

@@ -1,0 +1,163 @@
+/* ============================================================
+   BespokeAgentics — element defaults for a page we OWN.
+
+   FIRST-PARTY PAGES ONLY: `apps/host` and `apps/embedding-demo`. A MicroDot
+   must never import this file, and `stylesheets.test.ts` fails if one does.
+
+   The reason is the injection model, not taste. `microdots/<name>/src/styles.css` is
+   compiled to a JS string and appended as a <style> to `document.head` of
+   whatever document loads the bundle — light DOM, no shadow root. A bare-tag
+   rule shipped that way repaints a stranger’s page: `html, body { background }`
+   alone would take over the host’s canvas.
+
+   Everything here is in `@layer tokens-base`, which sits between Tailwind’s
+   `base` (preflight) and `utilities`. That is the only position that gets both
+   halves right: above `base` so preflight does not strip the heading sizes
+   below, and below `utilities` so `class="text-fg-muted text-body-s"` on a <p>
+   still wins. Leaving these unlayered — unlayered beats EVERY layer — would
+   silently swallow every Tailwind text-colour and text-size utility on these
+   tags.
+   ============================================================ */
+
+@layer tokens-base {
+  html,
+  body {
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: var(--lh-body);
+    font-weight: var(--fw-light);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ---------- Semantic typography roles ----------
+     Paired with the `.t-*` classes in theme.css, which carry the same values and
+     are what MicroDot markup reaches for (it gets no bare-tag defaults). */
+  h1.hero {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--fs-display-xl);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.03em;
+    color: var(--text-heading);
+  }
+
+  h1,
+  h2.section {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--fs-display-l);
+    line-height: var(--lh-display);
+    letter-spacing: -0.02em;
+    color: var(--text-heading);
+  }
+
+  h2,
+  h3.card {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--fs-display-m);
+    line-height: var(--lh-heading);
+    letter-spacing: -0.01em;
+    color: var(--text-heading);
+  }
+
+  h3,
+  h4,
+  h5 {
+    font-family: var(--font-body);
+    font-weight: var(--fw-medium);
+    color: var(--text-primary);
+  }
+
+  p.lead {
+    font-family: var(--font-body);
+    font-weight: var(--fw-light);
+    font-size: var(--fs-body-l);
+    line-height: var(--lh-relaxed);
+    color: var(--text-secondary);
+  }
+
+  p {
+    font-family: var(--font-body);
+    font-weight: var(--fw-light);
+    font-size: var(--fs-body-m);
+    line-height: var(--lh-body);
+    color: var(--text-secondary);
+  }
+
+  small {
+    font-family: var(--font-body);
+    font-weight: var(--fw-regular);
+    font-size: var(--fs-body-s);
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  button {
+    font-family: var(--font-body);
+    font-weight: var(--fw-medium);
+    font-size: var(--fs-button);
+    line-height: 1.4;
+    letter-spacing: var(--ls-tight);
+  }
+
+  label {
+    font-family: var(--font-body);
+    font-weight: var(--fw-medium);
+    font-size: var(--fs-label);
+    line-height: 1.4;
+    color: var(--text-secondary);
+  }
+
+  code,
+  pre,
+  kbd {
+    font-family: var(--font-mono);
+    font-weight: var(--fw-regular);
+    font-size: var(--fs-mono-sm);
+    line-height: var(--lh-code);
+    color: var(--text-primary);
+  }
+
+  a {
+    color: var(--text-link);
+    text-decoration: none;
+    transition: color 120ms ease;
+  }
+
+  a:hover {
+    color: var(--text-link-hover);
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* The unscoped twins of the `[data-microdot]`-scoped rules in theme.css. */
+  :where(
+    a,
+    button,
+    input,
+    textarea,
+    select,
+    summary,
+    [tabindex]
+  ):focus-visible {
+    outline: 2px solid var(--accent-default);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text-primary);
+    box-shadow: inset 0 0 0 100px var(--surface-page);
+    caret-color: var(--text-primary);
+  }
+}

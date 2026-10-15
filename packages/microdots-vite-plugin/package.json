@@ -1,0 +1,31 @@
+{
+  "description": "Vite build hooks for emitting MicroDot surface manifests from repository and standalone workspaces.",
+  "exports": {
+    ".": {
+      "default": "./src/index.js",
+      "import": "./src/index.js",
+      "types": "./src/index.d.ts"
+    }
+  },
+  "files": [
+    "src/index.js",
+    "src/index.d.ts"
+  ],
+  "license": "Apache-2.0",
+  "main": "./src/index.js",
+  "name": "@bespokeagentics/microdots-vite-plugin",
+  "peerDependencies": {
+    "vite": "8.2.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "directory": "packages/microdots-vite-plugin",
+    "type": "git",
+    "url": "https://github.com/qdhenry/site-discovery.git"
+  },
+  "type": "module",
+  "types": "./src/index.d.ts",
+  "version": "0.1.1"
+}
