@@ -1,5 +1,6 @@
 import { Schema as S } from 'effect'
 
+import type { Api, Model } from '@earendil-works/pi-ai'
 import {
   type Models,
   calculateCost,
@@ -20,6 +21,7 @@ import {
   evaluateSettings,
   initialSettings,
   snapshotSettings,
+  validateSettings,
 } from './settings.ts'
 import { publicUrl, resolvePublic, robotsAllowed } from './urls.ts'
 
@@ -67,6 +69,7 @@ export type Providers = {
     images: readonly { bytes: Uint8Array; mime: string }[],
     signal: AbortSignal,
     settings?: AnalysisSettingsSnapshot,
+    executionModelJson?: string,
   ) => Promise<AnalysisResult>
   models: Models
   reservationBoundUsd: number
@@ -233,7 +236,7 @@ export function createProviders(
         extension: 'png',
       }
     },
-    async analyze(page, html, images, signal, settings) {
+    async analyze(page, html, images, signal, settings, executionModelJson) {
       if (page.provenance.mode === 'fixture') {
         if (!config.fixtureEnabled)
           return fail('configuration', 'Deterministic fixtures are disabled')
@@ -288,7 +291,11 @@ export function createProviders(
           evaluateSettings(config, models, defaults.values),
         )
       const values = requestSettings.values
-      const selectedModel = models.getModel('anthropic', values.modelId)
+      const frozenModel: Model<Api> | undefined = executionModelJson
+        ? JSON.parse(executionModelJson)
+        : undefined
+      const selectedModel =
+        frozenModel ?? models.getModel('anthropic', values.modelId)
       // Pi's catalog can opt models into server-side refusal fallback. Discovery
       // keeps model selection explicit and never sends that fallback request.
       const model = selectedModel
@@ -297,11 +304,22 @@ export function createProviders(
             compat: { ...selectedModel.compat, allowedFallbackModels: [] },
           }
         : undefined
-      const evaluation = evaluateSettings(config, models, values)
-      if (!model || !evaluation.analysisReady)
+      if (requestSettings.model)
+        validateSettings(models, values, [requestSettings.model])
+      const ready = requestSettings.model
+        ? !!config.accountId &&
+          !!config.gatewayId &&
+          !!config.gatewayToken &&
+          !!config.anthropicKey &&
+          values.runLimitUsd !== null &&
+          values.monthlyLimitUsd !== null &&
+          values.attemptReservationUsd !== null &&
+          values.attemptReservationUsd >= requestSettings.minimumReservationUsd
+        : evaluateSettings(config, models, values).analysisReady
+      if (!model || model.id !== values.modelId || !ready)
         return fail(
           'configuration',
-          `Claude analysis configuration: ${evaluation.issues.join('; ')}`,
+          'Claude analysis needs compatible admitted model settings, credentials, and spending limits',
         )
       if (images.some(image => image.bytes.length > 5_000_000))
         return fail(
@@ -405,7 +423,10 @@ export function createProviders(
         .join('')
       const u = result.usage
       const actualModelId = result.responseModel ?? model.id
-      const actualModel = models.getModel('anthropic', actualModelId)
+      const actualModel =
+        actualModelId.replace(/-\d{8}$/, '') === model.id.replace(/-\d{8}$/, '')
+          ? model
+          : models.getModel('anthropic', actualModelId)
       // A gateway can omit the TTL split. Charge all reported writes at the requested
       // one-hour rate in that case instead of silently using the five-minute rate.
       if (

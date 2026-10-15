@@ -10,7 +10,7 @@ import { defineMicroDot } from '@bespokeagentics/microdots-element'
 
 import {
   ChangedSetting, ClosedSettings, FailedSettings, FailedSettingsPreview,
-  ReloadedSettings, RequestedSettings, RequestedSettingsPreview, RequestedSettingsSave, RevertedSettings,
+  ReloadedSettings, RequestedModelRefresh, RequestedSettings, RequestedSettingsPreview, RequestedSettingsSave, RevertedSettings,
   SucceededMutationSettings, SucceededSettings, SucceededSettingsPreview, settingsDirty, settingsDraft, settingsValues,
   ChangedContext, ChangedField, ChoseDuplicate, ClearedFindings, CompletedReport,
   FailedMutation, FailedSnapshot, LoadSnapshot, LoadWorkspace, PreviewData,
@@ -251,11 +251,12 @@ const agentSettings = SettingsSnapshot.make({
     temperature: null, requestTimeoutMs: 120000, cacheRetention: 'short', maxDomChars: 30000,
     screenshotEvidence: 'both', extraInstructions: '', runLimitUsd: 5, monthlyLimitUsd: 100, attemptReservationUsd: 3,
   } },
+  catalog: { source: 'anthropic-api', status: 'fresh', revision: 1, fetchedAt: '2026-10-15T12:00:00.000Z', expiresAt: '2026-10-15T16:00:00.000Z', lastAttemptAt: '2026-10-15T12:00:00.000Z', nextRetryAt: null, error: '', ttlSeconds: 14400, modelCount: 2 },
   models: [
-    { id: 'claude-budget', label: 'Claude with thinking budget', contextWindow: 200000, maxOutputTokens: 64000, reasoningLevels: ['off', 'low', 'high'], defaultReasoning: 'off', thinkingMode: 'budget', supportsTemperature: true, cacheRetentions: ['none', 'short', 'long'] },
-    { id: 'claude-adaptive', label: 'Claude adaptive', contextWindow: 200000, maxOutputTokens: 32000, reasoningLevels: ['high', 'max'], defaultReasoning: 'high', thinkingMode: 'adaptive', supportsTemperature: false, cacheRetentions: ['none', 'short'] },
+    { selectable: true, disabledReason: '', lifecycle: 'active', createdAt: '2025-02-19T00:00:00Z', deprecatedAt: null, retiresAt: null, pricingSource: 'pi-ai-1.0.3', capabilitySource: 'anthropic-api', supportsImages: true, effectiveContextWindow: 200000, effectiveMaxOutputTokens: 64000, id: 'claude-budget', label: 'Claude with thinking budget', contextWindow: 200000, maxOutputTokens: 64000, reasoningLevels: ['off', 'low', 'high'], defaultReasoning: 'off', thinkingMode: 'budget', supportsTemperature: true, cacheRetentions: ['none', 'short', 'long'] },
+    { selectable: true, disabledReason: '', lifecycle: 'active', createdAt: '2026-02-17T00:00:00Z', deprecatedAt: null, retiresAt: null, pricingSource: 'pi-ai-1.0.3', capabilitySource: 'anthropic-api', supportsImages: true, effectiveContextWindow: 200000, effectiveMaxOutputTokens: 32000, id: 'claude-adaptive', label: 'Claude adaptive', contextWindow: 200000, maxOutputTokens: 32000, reasoningLevels: ['high', 'max'], defaultReasoning: 'high', thinkingMode: 'adaptive', supportsTemperature: false, cacheRetentions: ['none', 'short'] },
   ],
-  evaluation: { analysisReady: true, issues: [], minimumReservationUsd: 2.4, effectiveMaxOutputTokens: 8192, effectiveThinkingBudgetTokens: null, effectiveReasoning: 'off' },
+  evaluation: { catalogRevision: 1, analysisReady: true, issues: [], minimumReservationUsd: 2.4, effectiveMaxOutputTokens: 8192, effectiveThinkingBudgetTokens: null, effectiveReasoning: 'off' },
 })
 const openSettings = (): Model => {
   const opened = update(base(), RequestedSettings()).model
@@ -437,5 +438,153 @@ describe('agent settings preferences and request evidence', () => {
       see(selector('.discovery-attempts')).toHaveText(/8,192/),
       see(selector('.discovery-attempts')).toHaveText(/Analysis validation used the full response/),
     )
+  })
+})
+
+describe('API model catalog and cache-aware settings', () => {
+  const incoming = (current: Model, snapshot: SettingsSnapshot) => update(current, SucceededSettings({ generation: current.generation, settingsEpoch: current.settingsEpoch, snapshot })).model
+  const refreshedCatalog = (revision: number): SettingsSnapshot => ({ ...agentSettings, catalog: { ...agentSettings.catalog, revision, fetchedAt: '2026-10-15T16:00:00.000Z', expiresAt: '2026-10-15T20:00:00.000Z' } })
+  const unsupported = { ...agentSettings.models[0]!, id: 'claude-future', label: 'New Claude', contextWindow: null, maxOutputTokens: null, effectiveContextWindow: 0, effectiveMaxOutputTokens: 0, reasoningLevels: [] as const, defaultReasoning: null, thinkingMode: 'unsupported' as const, supportsImages: false, supportsTemperature: false, selectable: false, disabledReason: 'This new model needs adapter support and pricing before analysis can use it.', pricingSource: 'unavailable' as const, capabilitySource: 'unavailable' as const }
+
+  test('shows API source, four-hour caching, fetched/expiry times and supplied model limits', () => {
+    scene({ update, view }, rendered(openSettings()),
+      see(selector('.discovery-model-catalog')).toHaveText(/Anthropic model catalog/),
+      see(selector('.discovery-model-catalog')).toHaveText(/cached for 4 hours/),
+      see(selector('.discovery-catalog-times')).toHaveText(/Fetched/),
+      see(selector('.discovery-catalog-times')).toHaveText(/Expires/),
+      see(selector('.discovery-model-details')).toHaveText(/Cost estimates use bundled pricing/),
+      see(selector('.discovery-settings-advanced')).toHaveText(/thinking-token budget presets/),
+    )
+  })
+  test('partial API capability metadata clearly labels installed adapter fallback', () => {
+    const current = incoming(openSettings(), { ...refreshedCatalog(2), models: [{ ...agentSettings.models[0]!, capabilitySource: 'anthropic-api+pi-ai-1.0.3' }] })
+    scene({ update, view }, rendered(current), see(selector('.discovery-model-details')).toHaveText(/Anthropic Models API with installed adapter fallback for missing details/))
+  })
+  test('unsupported API models stay visible and disabled with a reason; selecting one cannot reset a draft', () => {
+    const current = incoming(openSettings(), { ...refreshedCatalog(2), models: [...agentSettings.models, unsupported], catalog: { ...refreshedCatalog(2).catalog, modelCount: 3 } })
+    const selected = editSetting(current, 'modelId', unsupported.id)
+    expect(selected).toBe(current)
+    scene({ update, view }, rendered(current),
+      see(selector('.discovery-settings option[value="claude-future"]')).toBeDisabled(),
+      see(selector('.discovery-unavailable-models')).toHaveText(/New Claude/),
+      see(selector('.discovery-unavailable-models')).toHaveText(/adapter support and pricing/),
+    )
+  })
+  test('a removed selected model and unsupported reasoning remain visible without substitution', () => {
+    const current = editSetting(editSetting(openSettings(), 'maxOutputTokens', '16384'), 'reasoning', 'high')
+    const removed = incoming(current, { ...refreshedCatalog(2), models: [], catalog: { ...refreshedCatalog(2).catalog, modelCount: 0 } })
+    expect(removed.settingsEditor?.draft).toEqual(current.settingsEditor?.draft)
+    expect(update(removed, RequestedSettingsPreview()).commands).toBeUndefined()
+    expect(update(removed, RequestedSettingsSave()).commands).toBeUndefined()
+    scene({ update, view }, rendered(removed),
+      see(selector('.discovery-settings option[value="claude-budget"]')).toBeDisabled(),
+      see(selector('.discovery-settings option[value="high"]')).toHaveText(/retained draft/),
+      see(selector('.discovery-model-catalog')).toHaveText(/API returned no available models/),
+      see(selector('.discovery-settings')).toHaveText(/selection is preserved/),
+    )
+  })
+  test('nullable API limits and unsupported defaults are shown without guessed limits or reasoning', () => {
+    const current = incoming(openSettings(), { ...refreshedCatalog(2), models: [{ ...unsupported, id: 'claude-budget' }] })
+    scene({ update, view }, rendered(current),
+      see(selector('.discovery-settings')).toHaveText(/Input limit not supplied/),
+      see(selector('.discovery-settings')).toHaveText(/Output limit not supplied/),
+      see(selector('.discovery-settings option[value="provider-default"]')).toHaveText(/unavailable/),
+    )
+    expect(current.settingsEditor?.draft.maxOutputTokens).toBe('8192')
+  })
+  test('explicit refresh preserves all edits and fences earlier read/preview responses', () => {
+    const dirty = previewSettings(editSetting(editSetting(openSettings(), 'maxOutputTokens', '16384'), 'reasoning', 'high'))
+    const request = update(dirty, RequestedModelRefresh())
+    expect(request.commands).toHaveLength(1)
+    expect(request.model.settings._tag).toBe('Refreshing')
+    expect(request.model.settingsEditor?.draft).toEqual(dirty.settingsEditor?.draft)
+    expect(request.model.settingsEditor?.preview._tag).toBe('Idle')
+    expect(request.model.settingsEpoch).toBe(dirty.settingsEpoch + 1)
+    const old = SucceededSettings({ generation: dirty.generation, settingsEpoch: dirty.settingsEpoch, snapshot: agentSettings })
+    expect(update(request.model, old).model).toBe(request.model)
+    const received = incoming(request.model, refreshedCatalog(2))
+    expect(received.settingsEditor?.draft).toEqual(dirty.settingsEditor?.draft)
+    expect(received.settingsEditor?.notice).toContain('Your draft is unchanged')
+    expect(received.mutation._tag).toBe('Ready')
+  })
+  test('catalog changes invalidate reviewed previews while preserving a now-incompatible reasoning choice', () => {
+    const dirty = previewSettings(editSetting(openSettings(), 'reasoning', 'high'))
+    const changed = incoming(dirty, { ...refreshedCatalog(2), models: [{ ...agentSettings.models[0]!, reasoningLevels: ['off'] }] })
+    expect(changed.settingsEditor?.draft.reasoning).toBe('high')
+    expect(changed.settingsEditor?.preview._tag).toBe('Idle')
+    expect(changed.settingsEditor?.draftRevision).toBeGreaterThan(dirty.settingsEditor!.draftRevision)
+    scene({ update, view }, rendered(changed), see(selector('.discovery-settings option[value="high"]')).toHaveText(/unavailable · retained draft/))
+    const late = update(changed, SucceededSettingsPreview({ generation: 0, settingsEpoch: changed.settingsEpoch, draftRevision: dirty.settingsEditor!.draftRevision, evaluation: agentSettings.evaluation }))
+    expect(late.model).toBe(changed)
+  })
+  test('a preview prepared against a newer catalog requires reloading metadata and another explicit preview', () => {
+    const dirty = editSetting(openSettings(), 'maxOutputTokens', '16384')
+    const result = update(dirty, SucceededSettingsPreview({ generation: 0, settingsEpoch: dirty.settingsEpoch, draftRevision: dirty.settingsEditor!.draftRevision, evaluation: { ...agentSettings.evaluation, catalogRevision: 2 } }))
+    expect(result.commands).toHaveLength(1)
+    expect(result.model.settings._tag).toBe('Refreshing')
+    expect(result.model.settingsEditor?.preview._tag).toBe('Idle')
+    expect(result.model.settingsEditor?.draft.maxOutputTokens).toBe('16384')
+    const received = incoming(result.model, refreshedCatalog(2))
+    const reviewed = previewSettings(received, { ...agentSettings.evaluation, catalogRevision: 2 })
+    expect(reviewed.settingsEditor?.preview._tag).toBe('Success')
+  })
+  test('older catalog replies cannot roll back newer model metadata even when settings revisions differ', () => {
+    const current = incoming(editSetting(openSettings(), 'maxOutputTokens', '16384'), refreshedCatalog(3))
+    const olderCatalog = { ...agentSettings, settings: { ...agentSettings.settings, revision: 2 } }
+    const received = incoming(current, olderCatalog)
+    expect(Option.getOrUndefined(AsyncData.getData(received.settings))?.catalog.revision).toBe(3)
+    expect(Option.getOrUndefined(AsyncData.getData(received.settings))?.settings.revision).toBe(2)
+    expect(received.settingsEditor?.draft.maxOutputTokens).toBe('16384')
+  })
+  test('an idempotent save receipt cannot replace a newer catalog already received while reconnecting', () => {
+    const submitted = update(previewSettings(editSetting(openSettings(), 'maxOutputTokens', '16384')), RequestedSettingsSave()).model
+    const refused = update(submitted, FailedMutation({ generation: 0, error: 'Connection interrupted', retryable: true, unauthorized: false })).model
+    const latest = incoming(refused, { ...refreshedCatalog(3), models: [...agentSettings.models, unsupported], settings: { ...agentSettings.settings, revision: 2, values: { ...agentSettings.settings.values, maxOutputTokens: 16384 } } })
+    const retried = update(latest, RequestedRetryCommand()).model
+    const receipt = { ...agentSettings, settings: { ...agentSettings.settings, revision: 2, values: { ...agentSettings.settings.values, maxOutputTokens: 16384 } } }
+    const confirmed = update(retried, SucceededMutationSettings({ generation: 0, snapshot: receipt })).model
+    const saved = Option.getOrUndefined(AsyncData.getData(confirmed.settings))
+    expect(saved?.catalog.revision).toBe(3)
+    expect(saved?.models.some(item => item.id === unsupported.id)).toBe(true)
+    expect(confirmed.settingsEditor?.draft.maxOutputTokens).toBe('16384')
+    expect(confirmed.mutation._tag).toBe('Ready')
+  })
+  test('stale and unavailable catalogs preserve the draft, report refresh errors and block reviewed settings saves', () => {
+    for (const status of ['stale', 'unavailable'] as const) {
+      const dirty = previewSettings(editSetting(openSettings(), 'maxOutputTokens', '16384'))
+      const received = incoming(dirty, { ...refreshedCatalog(2), catalog: { ...refreshedCatalog(2).catalog, status, error: 'Model refresh failed', nextRetryAt: '2026-10-15T16:01:00.000Z' } })
+      expect(received.settingsEditor?.draft.maxOutputTokens).toBe('16384')
+      expect(update(received, RequestedSettingsSave()).commands).toBeUndefined()
+      scene({ update, view }, rendered(received),
+        see(selector('.discovery-model-catalog')).toHaveText(/Model refresh failed/),
+        see(selector('.discovery-model-catalog')).toHaveText(/New live analysis is blocked/),
+        see(selector('.discovery-model-catalog')).toHaveText(/Automatic refresh can retry/),
+        see(selector('.discovery-settings-actions .discovery-button--primary')).toBeDisabled(),
+      )
+    }
+  })
+  test('expiry at the same persisted revision invalidates an otherwise completed preview', () => {
+    const current = previewSettings(editSetting(openSettings(), 'maxOutputTokens', '16384'))
+    const expired = incoming(current, { ...agentSettings, catalog: { ...agentSettings.catalog, status: 'stale' } })
+    expect(expired.settingsEditor?.preview._tag).toBe('Idle')
+    expect(expired.settingsEditor?.draft).toEqual(current.settingsEditor?.draft)
+  })
+  test('a failed refresh before expiry keeps valid cache availability and reports the failure separately', () => {
+    const current = incoming(openSettings(), { ...refreshedCatalog(2), catalog: { ...refreshedCatalog(2).catalog, error: 'Temporary API outage' } })
+    scene({ update, view }, rendered(current),
+      see(selector('.discovery-model-catalog')).toHaveText(/Current cache/),
+      see(selector('.discovery-model-catalog')).toHaveText(/latest refresh failed/),
+      see(selector('.discovery-model-catalog')).toHaveText(/remains valid until its expiry/),
+      see(selector('.discovery-model-catalog')).not.toHaveText(/New live analysis is blocked/),
+    )
+  })
+  test('ordinary same-revision cached polling preserves a completed preview', () => {
+    const current = previewSettings(editSetting(openSettings(), 'maxOutputTokens', '16384'))
+    const received = incoming(current, agentSettings)
+    expect(received.settingsEditor).toBe(current.settingsEditor)
+    const polling = update(current, Ticked()).model
+    expect(polling.settings._tag).toBe('Refreshing')
+    const repeated = update(polling, RequestedModelRefresh())
+    expect(repeated.commands).toBeUndefined()
   })
 })

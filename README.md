@@ -29,7 +29,7 @@ flowchart LR
 | [Bun](https://bun.sh) 1.4 or later | Everything |
 | Cloudflare account with [Browser Run](https://developers.cloudflare.com/browser-run/) | Live capture |
 | Cloudflare [AI Gateway](https://developers.cloudflare.com/ai-gateway/) with authentication turned on | Live analysis |
-| [Anthropic API key](https://console.anthropic.com/) | Live analysis |
+| [Anthropic API key](https://console.anthropic.com/) | Model catalog and live analysis |
 | Chromium for Playwright (`bunx playwright install chromium`) | Only `bun run test:browser` |
 
 ## Quick start (no accounts)
@@ -38,7 +38,7 @@ flowchart LR
 git clone https://github.com/qdhenry/site-discovery.git
 cd site-discovery
 bun install
-DISCOVERY_FIXTURES=1 bun run dev
+DISCOVERY_FIXTURES=1 DISCOVERY_MODEL_CATALOG_FIXTURE=1 bun run dev
 ```
 
 1. Open http://127.0.0.1:3193/.
@@ -52,7 +52,7 @@ Fixture runs are labeled as such and make no network or provider calls.
 1. **Account ID.** Copy it from the Cloudflare dashboard sidebar.
 2. **Browser Run token.** [Create a custom API token](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/) with the **Account · Browser Run · Edit** permission.
 3. **AI Gateway.** Create a gateway. In its **Settings**, select **Create authentication token** (the **AI Gateway Run** permission), then turn on **Authenticated Gateway**. Note the gateway ID.
-4. **Anthropic key.** Create one in the Anthropic Console. The service sends it per request through the gateway (`x-api-key`). Gateway-stored keys (BYOK) and unified billing are not used.
+4. **Anthropic key.** Create one in the Anthropic Console. The service uses it directly with the Anthropic Models API to load model information, and sends it per analysis request through the gateway (`x-api-key`). Gateway-stored keys (BYOK) and unified billing are not used.
 5. **Configure.** Copy `environment.example` to `.env` and fill it in. Bun loads `.env` automatically.
 
    ```sh
@@ -64,7 +64,7 @@ Fixture runs are labeled as such and make no network or provider calls.
 
 ## Configuration
 
-All configuration stays on the service and is never sent to the browser.
+Credentials and gateway routing stay on the service. Model settings and catalog information are available in the owner-authenticated UI.
 
 | Variable | Meaning |
 |---|---|
@@ -72,7 +72,7 @@ All configuration stays on the service and is never sent to the browser.
 | `CLOUDFLARE_BROWSER_API_TOKEN` | Browser Run credential (`Browser Run - Edit`) |
 | `CLOUDFLARE_AI_GATEWAY_ID` | Gateway ID |
 | `AI_GATEWAY_API_TOKEN` | Gateway credential, sent as `cf-aig-authorization` |
-| `ANTHROPIC_API_KEY` | Claude credential, sent as `x-api-key` |
+| `ANTHROPIC_API_KEY` | Anthropic Models API and Claude credential, sent as `x-api-key` |
 | `DISCOVERY_MODEL` | Initial model, default `claude-sonnet-4-6` |
 | `DISCOVERY_RUN_LIMIT_USD` | Initial per-run limit |
 | `DISCOVERY_MONTHLY_LIMIT_USD` | Initial monthly limit |
@@ -80,8 +80,13 @@ All configuration stays on the service and is never sent to the browser.
 | `DISCOVERY_STATE_DIR` | Private storage directory, default `.local/discovery` |
 | `DISCOVERY_OWNER_TOKEN` | Optional sign-in token (at least 24 characters) instead of a generated one |
 | `DISCOVERY_FIXTURES` | Set to exactly `1` to enable fixture mode |
+| `DISCOVERY_MODEL_CATALOG_FIXTURE` | Set to exactly `1` with `DISCOVERY_FIXTURES=1` for an explicitly labeled offline model catalog; it cannot authorize live analysis |
 
 The model and the three limits only set the initial **Agent settings**. Once you save settings in the UI, the saved values take precedence. See [docs/agent-settings.md](docs/agent-settings.md).
+
+Model availability, names, limits and supplied capabilities come from the **Anthropic Models API**, cached durably for four hours. **Refresh model catalog** requests fresh metadata without running analysis. Expired data remains visible if refresh fails, but blocks new live analysis until refreshed. Models unsupported by the installed adapter or pricing metadata are shown as unavailable; cost estimates use bundled Pi AI 1.0.3 pricing, because the API does not supply prices.
+
+Settings changes apply the next time you start or retry analysis. Running analysis retains its admitted settings and model information across all selected pages.
 
 ## Security model
 

@@ -39,6 +39,8 @@ export const HandlersLive = DiscoveryRpcs.toLayer(
   Effect.succeed({
     getDiscoverySettings: (_input, options) =>
       guarded(options.headers, runtime => runtime.engine.getSettings()),
+    refreshDiscoveryModels: (_input, options) =>
+      guarded(options.headers, runtime => runtime.engine.getSettings(true)),
     previewDiscoverySettings: (input, options) =>
       guarded(options.headers, runtime =>
         runtime.engine.previewSettings(input.values),

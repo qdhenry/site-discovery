@@ -58,6 +58,7 @@ export type Model = typeof Model.Type
 const epoch = { generation: S.Int }
 const settingsEpoch = { ...epoch, settingsEpoch: S.Int }
 export const RequestedSettings = taggedStruct('RequestedSettings')
+export const RequestedModelRefresh = taggedStruct('RequestedModelRefresh')
 export const ClosedSettings = taggedStruct('ClosedSettings')
 export const RevertedSettings = taggedStruct('RevertedSettings')
 export const ReloadedSettings = taggedStruct('ReloadedSettings')
@@ -123,7 +124,7 @@ export const Message = S.Union([
   ChoseDuplicate, ClearedFindings, RequestedPreview, SucceededPreview, FailedPreview, RequestedSave,
   SucceededMutationRun, SucceededMutationProject, SucceededMutationSave, SucceededMutationDelete, FailedMutation,
   RequestedExport, SucceededExport, FailedExport, ToggledLibrary, RequestedDelete, CancelledDelete, ConfirmedDelete,
-  RequestedCopy, CompletedCopy, CompletedReport, RequestedSettings, ClosedSettings, RevertedSettings, ReloadedSettings,
+  RequestedCopy, CompletedCopy, CompletedReport, RequestedSettings, RequestedModelRefresh, ClosedSettings, RevertedSettings, ReloadedSettings,
   ChangedSetting, SucceededSettings, FailedSettings, RequestedSettingsPreview, SucceededSettingsPreview, FailedSettingsPreview, RequestedSettingsSave, SucceededMutationSettings,
 ])
 export type Message = typeof Message.Type
@@ -168,6 +169,17 @@ export const LoadSettings = Command.define('LoadSettings', {
   execute: ({ generation, settingsEpoch, apiUrl }) => Effect.gen(function* () {
     const client = yield* DiscoveryClient
     const snapshot = yield* client.getDiscoverySettings({})
+    return SucceededSettings({ generation, settingsEpoch, snapshot })
+  }).pipe(
+    Effect.catch(error => Effect.succeed(FailedSettings({ generation, settingsEpoch, error: errorMessage(error), unauthorized: unauthorized(error) }))),
+    Effect.provide(makeDiscoveryClientLive(apiUrl)),
+  ),
+})
+export const RefreshModels = Command.define('RefreshModels', {
+  args: { ...settingsEpoch, apiUrl: S.String }, messages: [SucceededSettings, FailedSettings],
+  execute: ({ generation, settingsEpoch, apiUrl }) => Effect.gen(function* () {
+    const client = yield* DiscoveryClient
+    const snapshot = yield* client.refreshDiscoveryModels({})
     return SucceededSettings({ generation, settingsEpoch, snapshot })
   }).pipe(
     Effect.catch(error => Effect.succeed(FailedSettings({ generation, settingsEpoch, error: errorMessage(error), unauthorized: unauthorized(error) }))),
@@ -280,7 +292,7 @@ const workspaceCommand = (model: Model) => LoadWorkspace({ generation: model.gen
 const snapshotCommand = (model: Model) => LoadSnapshot({ generation: model.generation, apiUrl: model.apiUrl, projectId: model.projectId, runId: model.runId })
 const settingsCommand = (model: Model) => LoadSettings({ generation: model.generation, settingsEpoch: model.settingsEpoch, apiUrl: model.apiUrl })
 const refresh = (model: Model): UpdateReturn => ({
-  model: evo(model, { workspace: pending, history: pending, library: pending, snapshot: value => model.runId === '' ? value : pending(value) }),
+  model: evo(model, { workspace: pending, history: pending, library: pending, snapshot: value => model.runId === '' ? value : pending(value), settings: value => model.settingsOpen && value._tag !== 'Loading' && value._tag !== 'Refreshing' ? pending(value) : value }),
   commands: [...(model.runId === '' ? [workspaceCommand(model)] : [workspaceCommand(model), snapshotCommand(model)]), ...(model.settingsOpen && model.settings._tag !== 'Loading' && model.settings._tag !== 'Refreshing' ? [settingsCommand(model)] : [])],
 })
 const signedOut = (model: Model, notice: string): UpdateReturn => ({ model: evo(model, {
@@ -370,9 +382,18 @@ export const settingsValues = (draft: SettingsDraft): AnalysisSettingsValues | u
 export const settingsDirty = (model: Model): boolean => model.settingsEditor !== null && JSON.stringify(model.settingsEditor.draft) !== JSON.stringify(settingsDraft(model.settingsEditor.base.values))
 const editorFrom = (snapshot: SettingsSnapshot, draftRevision = 0): typeof SettingsEditor.Type => ({ base: snapshot.settings, draft: settingsDraft(snapshot.settings.values), draftRevision, preview: AsyncData.Idle(), notice: '' })
 const settingsConflict = (model: Model) => model.settingsEditor !== null && (settingsOf(model)?.settings.revision ?? model.settingsEditor.base.revision) !== model.settingsEditor.base.revision
+const retainNewerSettings = (held: SettingsSnapshot | undefined, snapshot: SettingsSnapshot): SettingsSnapshot => held === undefined ? snapshot : ({
+  ...snapshot,
+  settings: held.settings.revision > snapshot.settings.revision ? held.settings : snapshot.settings,
+  catalog: held.catalog.revision > snapshot.catalog.revision ? held.catalog : snapshot.catalog,
+  models: held.catalog.revision > snapshot.catalog.revision ? held.models : snapshot.models,
+})
+const selectedModel = (model: Model) => settingsOf(model)?.models.find(item => item.id === model.settingsEditor?.draft.modelId)
+const canReviewSettings = (model: Model) => settingsOf(model)?.catalog.status === 'fresh' && selectedModel(model)?.selectable === true && model.settings._tag !== 'Loading' && model.settings._tag !== 'Refreshing'
 const changedSetting = (model: Model, key: keyof SettingsDraft, value: string): UpdateReturn => {
   const editor = model.settingsEditor
   if (editor === null || isBusy(model) || model.mutation._tag === 'Refused' && model.mutation.request._tag === 'SettingsRequest' && model.mutation.retryable) return { model }
+  if (key === 'modelId' && !settingsOf(model)?.models.some(item => item.id === value && item.selectable)) return { model }
   let draft = { ...editor.draft, [key]: value }
   const capability = settingsOf(model)?.models.find(item => item.id === draft.modelId)
   const adjustments: string[] = []
@@ -384,14 +405,14 @@ const changedSetting = (model: Model, key: keyof SettingsDraft, value: string): 
     if ((!capability.supportsTemperature || effectiveReasoning !== 'off') && draft.temperature !== '') {
       draft.temperature = ''; adjustments.push('Temperature returned to the provider default because it is incompatible with this reasoning mode.')
     }
-    if (draft.thinkingBudgetTokens !== '' && (capability.thinkingMode !== 'budget' || effectiveReasoning === 'off' || Number(draft.thinkingBudgetTokens) > capability.maxOutputTokens - 1024)) {
+    if (draft.thinkingBudgetTokens !== '' && (capability.thinkingMode !== 'budget' || effectiveReasoning === 'off' || Number(draft.thinkingBudgetTokens) > capability.effectiveMaxOutputTokens - 1024)) {
       draft.thinkingBudgetTokens = ''; adjustments.push('Custom thinking tokens returned to the model default.')
     }
     if (!capability.cacheRetentions.some(retention => retention === draft.cacheRetention)) {
       draft.cacheRetention = capability.cacheRetentions[0] ?? 'none'; adjustments.push('Cache retention changed to an available option.')
     }
-    if (Number(draft.maxOutputTokens) > capability.maxOutputTokens) {
-      draft.maxOutputTokens = String(capability.maxOutputTokens); adjustments.push('Output tokens were reduced to this model’s maximum.')
+    if (Number(draft.maxOutputTokens) > capability.effectiveMaxOutputTokens) {
+      draft.maxOutputTokens = String(capability.effectiveMaxOutputTokens); adjustments.push('Output tokens were reduced to this model’s maximum.')
     }
   }
   return { model: evo(model, { settingsEditor: () => evo(editor, { draft: () => draft, draftRevision: value => value + 1, preview: () => AsyncData.Idle(), notice: () => adjustments.join(' ') }) }) }
@@ -408,6 +429,11 @@ export const update = (model: Model, message: Message): UpdateReturn => {
       const next = evo(model, { settingsOpen: () => true, settingsEpoch: value => value + 1, settings: pending, settingsEditor: editor => model.settingsOpen ? editor : snapshot === undefined ? null : editorFrom(snapshot) })
       return { model: next, commands: [settingsCommand(next)] }
     },
+    RequestedModelRefresh: () => {
+      if (!authenticated(model) || !model.settingsOpen || isBusy(model) || unresolvedSettingsSave(model) || model.settings._tag === 'Loading' || model.settings._tag === 'Refreshing') return { model }
+      const next = evo(model, { settingsEpoch: value => value + 1, settings: pending, settingsEditor: editor => editor === null ? null : evo(editor, { draftRevision: value => value + 1, preview: () => AsyncData.Idle(), notice: () => '' }) })
+      return { model: next, commands: [RefreshModels({ generation: next.generation, settingsEpoch: next.settingsEpoch, apiUrl: next.apiUrl })] }
+    },
     ClosedSettings: () => isBusy(model) || model.mutation._tag === 'Refused' && model.mutation.request._tag === 'SettingsRequest' && model.mutation.retryable ? { model } : { model: evo(model, { settingsOpen: () => false, settingsEpoch: value => value + 1, settingsEditor: () => null }) },
     RevertedSettings: () => {
       const editor = model.settingsEditor
@@ -416,32 +442,48 @@ export const update = (model: Model, message: Message): UpdateReturn => {
     ReloadedSettings: () => {
       const snapshot = settingsOf(model)
       if (snapshot === undefined || isBusy(model) || unresolvedSettingsSave(model)) return { model }
-      const next = evo(model, { settingsEditor: () => editorFrom(snapshot, (model.settingsEditor?.draftRevision ?? 0) + 1), settings: pending, mutation: mutation => mutation._tag === 'Refused' && mutation.request._tag === 'SettingsRequest' ? Ready() : mutation, notice: () => '' })
+      const next = evo(model, { settingsEpoch: value => value + 1, settingsEditor: () => editorFrom(snapshot, (model.settingsEditor?.draftRevision ?? 0) + 1), settings: pending, mutation: mutation => mutation._tag === 'Refused' && mutation.request._tag === 'SettingsRequest' ? Ready() : mutation, notice: () => '' })
       return { model: next, commands: [settingsCommand(next)] }
     },
     ChangedSetting: ({ key, value }) => changedSetting(model, key, value),
     SucceededSettings: ({ snapshot }) => {
-      if (!model.settingsOpen || (settingsOf(model)?.settings.revision ?? -1) > snapshot.settings.revision) return { model }
-      return { model: evo(model, { settings: () => SettingsData.Success({ data: snapshot }), settingsEditor: editor => editor === null || !settingsDirty(model) && editor.base.revision !== snapshot.settings.revision ? editorFrom(snapshot, (editor?.draftRevision ?? -1) + 1) : editor }) }
+      if (!model.settingsOpen) return { model }
+      const held = settingsOf(model)
+      // Settings and catalog revisions advance independently. Late reads may
+      // update one without rolling the other back.
+      const accepted = retainNewerSettings(held, snapshot)
+      const catalogChanged = held !== undefined && (held.catalog.revision !== accepted.catalog.revision || held.catalog.status !== accepted.catalog.status || held.catalog.source !== accepted.catalog.source)
+      return { model: evo(model, { settings: () => SettingsData.Success({ data: accepted }), settingsEditor: editor => {
+        if (editor === null || !settingsDirty(model) && editor.base.revision !== accepted.settings.revision) return editorFrom(accepted, (editor?.draftRevision ?? -1) + 1)
+        return catalogChanged ? evo(editor, { draftRevision: value => value + 1, preview: () => AsyncData.Idle(), notice: () => 'Model information changed. Your draft is unchanged; review the available options and preview again before saving.' }) : editor
+      } }) }
     },
     FailedSettings: ({ error, unauthorized }) => unauthorized ? signedOut(model, 'Your owner session has ended. Sign in again to reconnect.') : { model: evo(model, { settings: data => failed(data, error) }) },
     RequestedSettingsPreview: () => {
       const editor = model.settingsEditor
-      if (editor === null || isBusy(model) || unresolvedSettingsSave(model)) return { model }
+      if (editor === null || isBusy(model) || unresolvedSettingsSave(model) || !canReviewSettings(model)) return { model }
       const values = settingsValues(editor.draft)
       if (values === undefined) return { model: evo(model, { settingsEditor: () => evo(editor, { preview: () => EvaluationData.Failure({ error: 'Enter valid numbers for output tokens, timeout, evidence and spending limits.' }) }) }) }
       return { model: evo(model, { settingsEditor: () => evo(editor, { preview: () => AsyncData.Loading(), notice: () => '' }) }), commands: [PreviewSettings({ generation: model.generation, settingsEpoch: model.settingsEpoch, apiUrl: model.apiUrl, draftRevision: editor.draftRevision, values })] }
     },
-    SucceededSettingsPreview: ({ draftRevision, evaluation }) => model.settingsEditor === null || model.settingsEditor.draftRevision !== draftRevision ? { model } : { model: evo(model, { settingsEditor: editor => editor === null ? null : evo(editor, { preview: () => EvaluationData.Success({ data: evaluation }) }) }) },
+    SucceededSettingsPreview: ({ draftRevision, evaluation }) => {
+      if (model.settingsEditor === null || model.settingsEditor.draftRevision !== draftRevision) return { model }
+      if (evaluation.catalogRevision !== undefined && evaluation.catalogRevision !== settingsOf(model)?.catalog.revision) {
+        const next = evo(model, { settings: pending, settingsEditor: editor => editor === null ? null : evo(editor, { draftRevision: value => value + 1, preview: () => AsyncData.Idle(), notice: () => 'Model information changed while preparing this preview. Review the updated options and preview again.' }) })
+        return { model: next, commands: [settingsCommand(next)] }
+      }
+      return { model: evo(model, { settingsEditor: editor => editor === null ? null : evo(editor, { preview: () => EvaluationData.Success({ data: evaluation }) }) }) }
+    },
     FailedSettingsPreview: ({ draftRevision, error, unauthorized }) => unauthorized ? signedOut(model, 'Your owner session has ended. Sign in again to reconnect.') : model.settingsEditor === null || model.settingsEditor.draftRevision !== draftRevision ? { model } : { model: evo(model, { settingsEditor: editor => editor === null ? null : evo(editor, { preview: () => EvaluationData.Failure({ error }) }) }) },
     RequestedSettingsSave: () => {
       const editor = model.settingsEditor
-      if (editor === null || editor.preview._tag !== 'Success' || settingsConflict(model) || model.mutation._tag === 'Refused' && model.mutation.request._tag === 'SettingsRequest' && model.mutation.retryable) return { model }
+      if (editor === null || editor.preview._tag !== 'Success' || !canReviewSettings(model) || settingsConflict(model) || model.mutation._tag === 'Refused' && model.mutation.request._tag === 'SettingsRequest' && model.mutation.retryable) return { model }
       const values = settingsValues(editor.draft)
       return values === undefined ? { model } : submit(model, SettingsRequest({ expectedRevision: editor.base.revision, values }))
     },
     SucceededMutationSettings: ({ snapshot }) => {
-      const next = evo(model, { generation: value => value + 1, settings: () => SettingsData.Success({ data: snapshot }), settingsEditor: () => editorFrom(snapshot, (model.settingsEditor?.draftRevision ?? 0) + 1), preview: data => data._tag === 'Loading' ? AsyncData.Idle() : data, exported: data => data._tag === 'Loading' ? AsyncData.Idle() : data, mutation: () => Ready(), notice: () => 'Agent settings saved. They apply to the next analysis you start or explicitly retry.' })
+      const accepted = retainNewerSettings(settingsOf(model), snapshot)
+      const next = evo(model, { generation: value => value + 1, settings: () => SettingsData.Success({ data: accepted }), settingsEditor: () => editorFrom(accepted, (model.settingsEditor?.draftRevision ?? 0) + 1), preview: data => data._tag === 'Loading' ? AsyncData.Idle() : data, exported: data => data._tag === 'Loading' ? AsyncData.Idle() : data, mutation: () => Ready(), notice: () => accepted.settings.revision > snapshot.settings.revision ? 'Your settings save was confirmed. A newer saved version is now shown.' : 'Agent settings saved. They apply to the next analysis you start or explicitly retry.' })
       return refresh(next)
     },
     Ticked: () => authenticated(model) && !isBusy(model) && model.workspace._tag !== 'Refreshing' && model.workspace._tag !== 'Loading' && model.snapshot._tag !== 'Refreshing' && model.snapshot._tag !== 'Loading' ? refresh(model) : { model },
@@ -594,13 +636,53 @@ const settingField = (label: string, key: keyof SettingsDraft, value: string, he
     h.input([h.Class('discovery-input'), h.Type('number'), h.Value(value), h.Disabled(disabled), h.OnInput(value => ChangedSetting({ key, value })), h.Attribute('autocomplete', 'off'), h.Attribute('step', String(bounds?.step ?? 1)), ...(bounds === undefined ? [] : [h.Attribute('min', String(bounds.min)), h.Attribute('max', String(bounds.max))])]),
     h.span([h.Class('discovery-help')], [help]),
   ])
-const settingSelect = (label: string, key: keyof SettingsDraft, value: string, options: ReadonlyArray<{ value: string; label: string }>, help: string, disabled: boolean, h: HtmlBuilder<Message>): Html =>
+const settingSelect = (label: string, key: keyof SettingsDraft, value: string, options: ReadonlyArray<{ value: string; label: string; disabled?: boolean }>, help: string, disabled: boolean, h: HtmlBuilder<Message>): Html =>
   h.label([h.Class('discovery-field')], [
     h.span([h.Class('discovery-label')], [label]),
-    h.select([h.Class('discovery-input'), h.Value(value), h.Disabled(disabled), h.OnInput(value => ChangedSetting({ key, value }))], A.map(options, option => h.keyed('option')(option.value, [h.Value(option.value), h.Selected(option.value === value)], [option.label]))),
+    h.select([h.Class('discovery-input'), h.Value(value), h.Disabled(disabled), h.OnInput(value => ChangedSetting({ key, value }))], A.map(options, option => h.keyed('option')(option.value, [h.Value(option.value), h.Selected(option.value === value), h.Disabled(option.disabled === true)], [option.label]))),
     help === '' ? h.empty : h.span([h.Class('discovery-help')], [help]),
   ])
 const reasoningLabel = (value: string) => value === 'off' ? 'Off' : value === 'xhigh' ? 'Extra high' : value.charAt(0).toUpperCase() + value.slice(1)
+const modelDetails = (capability: AnalysisModel, h: HtmlBuilder<Message>): Html => h.details([h.Class('discovery-model-details')], [
+  h.summary([], ['Model limits & availability']),
+  h.div([h.Class('discovery-model-detail-body')], [
+    h.p([], [capability.selectable ? `Usable limits: ${capability.effectiveContextWindow.toLocaleString()} input tokens · ${capability.effectiveMaxOutputTokens.toLocaleString()} output tokens.` : capability.disabledReason]),
+    h.p([], [`Capabilities: ${capability.capabilitySource === 'anthropic-api' ? 'Anthropic Models API' : capability.capabilitySource === 'anthropic-api+pi-ai-1.0.3' ? 'Anthropic Models API with installed adapter fallback for missing details' : capability.capabilitySource === 'pi-ai-1.0.3' ? 'Installed model adapter; API capability details were not supplied' : 'Unavailable'}. Image evidence: ${capability.supportsImages ? 'supported' : 'not supported'}.`]),
+    h.p([], [capability.pricingSource === 'pi-ai-1.0.3' ? 'Cost estimates use bundled pricing (Pi AI 1.0.3).' : 'Cost estimates are unavailable for this model. The service needs compatible adapter support and pricing before analysis can use it.']),
+    h.p([], [`Availability: ${capability.lifecycle === 'unknown' ? 'Not supplied by the API' : reasoningLabel(capability.lifecycle)}${capability.deprecatedAt === null ? '' : ` · deprecated ${displayDate(capability.deprecatedAt)}`}${capability.retiresAt === null ? '' : ` · retires ${displayDate(capability.retiresAt)}`}.`]),
+    capability.createdAt === '' ? h.empty : h.p([], [`Released ${displayDate(capability.createdAt)}.`]),
+  ]),
+])
+const catalogView = (model: Model, snapshot: SettingsSnapshot, locked: boolean, h: HtmlBuilder<Message>): Html => {
+  const catalog = snapshot.catalog
+  const pending = model.settings._tag === 'Loading' || model.settings._tag === 'Refreshing'
+  const unavailable = snapshot.models.filter(item => !item.selectable)
+  return h.section([h.Class('discovery-model-catalog'), h.Attribute('aria-label', 'Model catalog')], [
+    h.div([h.Class('discovery-section-heading')], [
+      h.div([], [h.h3([], [catalog.source === 'fixture' ? 'Fixture model catalog' : 'Anthropic model catalog']), h.p([h.Class('discovery-help')], [`${catalog.modelCount} models · cached for ${catalog.ttlSeconds / 3600} hours`])]),
+      badge(catalog.status === 'fresh' ? 'Current cache' : catalog.status === 'stale' ? 'Expired cache' : 'Catalog unavailable', catalog.status === 'fresh' ? 'neutral' : 'warning', h),
+    ]),
+    catalog.source === 'fixture' ? h.p([h.Class('discovery-help')], ['Deterministic catalog for fixture verification. No Anthropic Models API request is made in this mode.']) : h.p([h.Class('discovery-help')], ['Model availability, names and reported limits are loaded from the Anthropic Models API by the service. App loading reuses the cache until it expires.']),
+    h.div([h.Class('discovery-catalog-times')], [
+      h.span([], [catalog.fetchedAt === null ? 'No catalog has been fetched.' : `Fetched ${displayDate(catalog.fetchedAt)}`]),
+      catalog.expiresAt === null ? h.empty : h.span([], [`Expires ${displayDate(catalog.expiresAt)}`]),
+    ]),
+    catalog.status === 'fresh' ? h.empty : h.div([h.Class('discovery-alert discovery-alert--warning'), h.Attribute('role', 'alert')], [
+      h.strong([], [catalog.status === 'stale' ? 'Showing an expired model list.' : 'Model information is unavailable.']),
+      h.p([], ['New live analysis is blocked until a current catalog is available. Your saved settings and unsaved draft are preserved.']),
+      catalog.error === '' ? h.empty : h.p([], [catalog.error]),
+      catalog.nextRetryAt === null ? h.empty : h.p([], [`Automatic refresh can retry after ${displayDate(catalog.nextRetryAt)}. You can request another refresh now.`]),
+    ]),
+    catalog.status === 'fresh' && catalog.error !== '' ? h.div([h.Class('discovery-alert discovery-alert--warning'), h.Attribute('role', 'alert')], [h.strong([], ['The latest refresh failed.']), h.p([], ['The current cached model list remains valid until its expiry.']), h.p([], [catalog.error])]) : h.empty,
+    h.div([h.Class('discovery-catalog-actions')], [h.p([h.Class('discovery-help')], ['Refresh checks model information only. It does not run analysis or change your settings.']), button(pending ? 'Checking model catalog…' : 'Refresh model catalog', RequestedModelRefresh(), locked || pending, 'secondary', h)]),
+    snapshot.models.length === 0 ? h.p([h.Class('discovery-help')], [catalog.status === 'fresh' ? 'The API returned no available models for this account. The list is empty; no substitute models have been added.' : 'There is no cached model list to display.']) : h.empty,
+    unavailable.length === 0 ? h.empty : h.details([h.Class('discovery-unavailable-models')], [
+      h.summary([], [`Unavailable models (${unavailable.length})`]),
+      h.ul([], unavailable.map(item => h.keyed('li')(item.id, [], [h.strong([], [item.label]), h.p([], [item.disabledReason || 'This model is not supported by the current service.'])]))),
+    ]),
+  ])
+}
+
 const settingsView = (model: Model, h: HtmlBuilder<Message>): Html => {
   if (!model.settingsOpen) return h.empty
   const snapshot = settingsOf(model)
@@ -616,21 +698,28 @@ const settingsView = (model: Model, h: HtmlBuilder<Message>): Html => {
   const thinkingAllowed = capability?.thinkingMode === 'budget' && reasoning !== 'off'
   const evaluation = Option.getOrUndefined(AsyncData.getData(editor.preview))
   const conflict = settingsConflict(model)
-  const tokenMax = capability?.maxOutputTokens ?? 8192
-  const options = (values: ReadonlyArray<string>) => values.map(value => ({ value, label: reasoningLabel(value) }))
+  const tokenMax = capability?.effectiveMaxOutputTokens ?? 0
+  const reviewAvailable = canReviewSettings(model)
+  const unavailableReason = capability === undefined ? 'This selected model is absent from the current catalog. Your selection is preserved; choose an available model to continue.' : capability.selectable ? '' : capability.disabledReason || 'This model cannot be used for analysis with the current service.'
+  const retainedCache = !capability?.cacheRetentions.some(value => value === draft.cacheRetention) ? [{ value: draft.cacheRetention, label: `${reasoningLabel(draft.cacheRetention)} (unavailable · retained draft)`, disabled: true }] : []
+  const retainedReasoning = draft.reasoning !== 'provider-default' && !capability?.reasoningLevels.some(level => level === draft.reasoning) ? [{ value: draft.reasoning, label: `${reasoningLabel(draft.reasoning)} (unavailable · retained draft)`, disabled: true }] : []
+  const options = (values: ReadonlyArray<string>) => values.map(value => ({ value, label: capability?.thinkingMode === 'budget' && value !== 'off' ? `${reasoningLabel(value)} · thinking budget preset` : reasoningLabel(value) }))
   return h.section([h.Class('discovery-card discovery-settings'), h.Attribute('aria-labelledby', 'discovery-settings-title')], [
     header,
     h.p([h.Class('discovery-muted')], ['These workspace-wide settings apply to the next analysis you start or explicitly retry. An analysis already running keeps its settings. Saving does not start analysis.']),
     errorBanner(asyncError(model.settings), h),
+    catalogView(model, snapshot, locked, h),
+    unavailableReason === '' ? h.empty : h.div([h.Class('discovery-alert discovery-alert--warning')], [unavailableReason]),
     conflict ? h.div([h.Class('discovery-alert discovery-alert--warning'), h.Attribute('role', 'alert')], [h.strong([], ['Saved settings changed in another session.']), h.p([], ['Your draft is still here. Reload saved settings to discard this draft and review the latest version before saving.']), button('Reload saved settings', ReloadedSettings(), locked, 'secondary', h)]) : h.empty,
     unresolvedSave ? h.div([h.Class('discovery-alert discovery-alert--warning')], ['The save response was interrupted. Retry the same request above to confirm whether these settings were saved.']) : h.empty,
     editor.notice === '' ? h.empty : h.div([h.Class('discovery-alert'), h.Attribute('role', 'status')], [editor.notice]),
     h.fieldset([h.Class('discovery-settings-group')], [
       h.legend([], ['Model & output']),
       h.div([h.Class('discovery-form-grid')], [
-        settingSelect('Analysis model', 'modelId', draft.modelId, [...(capability === undefined ? [{ value: draft.modelId, label: `${draft.modelId} (unavailable)` }] : []), ...snapshot.models.map(item => ({ value: item.id, label: item.label }))], capability === undefined ? 'Choose an available model.' : `${capability.contextWindow.toLocaleString()} token context · up to ${tokenMax.toLocaleString()} output tokens`, locked, h),
-        settingField('Maximum output tokens', 'maxOutputTokens', draft.maxOutputTokens, capability?.thinkingMode === 'adaptive' ? 'Allow enough output for complete findings. Thinking shares this ceiling for this model.' : 'Allow enough output for complete findings. The preview includes any additional thinking tokens.', locked, h, { min: thinkingAllowed ? 1024 : 1, max: tokenMax }),
+        settingSelect('Analysis model', 'modelId', draft.modelId, [...(capability === undefined ? [{ value: draft.modelId, label: `${draft.modelId} (unavailable · retained selection)`, disabled: true }] : []), ...snapshot.models.map(item => ({ value: item.id, label: item.selectable ? item.label : `${item.label} — unavailable`, disabled: !item.selectable }))], capability === undefined ? 'Choose an available model.' : `${capability.contextWindow === null ? 'Input limit not supplied' : `${capability.contextWindow.toLocaleString()} input tokens`} · ${capability.maxOutputTokens === null ? 'Output limit not supplied' : `${capability.maxOutputTokens.toLocaleString()} output tokens`}`, locked, h),
+        settingField('Maximum output tokens', 'maxOutputTokens', draft.maxOutputTokens, capability?.thinkingMode === 'adaptive' ? 'Allow enough output for complete findings. Thinking shares this ceiling for this model.' : 'Allow enough output for complete findings. The preview includes any additional thinking tokens.', locked || capability?.selectable !== true, h, tokenMax > 0 ? { min: thinkingAllowed ? 1024 : 1, max: tokenMax } : undefined),
       ]),
+      capability === undefined ? h.empty : modelDetails(capability, h),
     ]),
     h.details([h.Class('discovery-settings-advanced')], [
       h.summary([], ['Reasoning, evidence & advanced options']),
@@ -638,10 +727,10 @@ const settingsView = (model: Model, h: HtmlBuilder<Message>): Html => {
         h.fieldset([h.Class('discovery-settings-group')], [
           h.legend([], ['Reasoning & sampling']),
           h.div([h.Class('discovery-form-grid')], [
-            settingSelect('Reasoning level', 'reasoning', draft.reasoning, [{ value: 'provider-default', label: `Provider default (${reasoningLabel(capability?.defaultReasoning ?? 'off')})` }, ...options(capability?.reasoningLevels ?? [])], 'Only reasoning levels supported by this model are available.', locked, h),
-            settingField('Thinking token budget', 'thinkingBudgetTokens', draft.thinkingBudgetTokens, thinkingAllowed ? 'Optional. Leave blank for the default budget for this reasoning level.' : capability?.thinkingMode === 'adaptive' ? 'This model adjusts thinking automatically; a fixed token budget is unavailable.' : 'Turn on reasoning to set a thinking budget.', locked || !thinkingAllowed, h, { min: 1024, max: Math.max(1024, tokenMax - 1024) }),
-            settingField('Temperature', 'temperature', draft.temperature, temperatureAllowed ? 'Optional, 0–1. Leave blank for the provider default.' : 'Temperature is available only with a compatible model and reasoning off.', locked || !temperatureAllowed, h, { min: 0, max: 1, step: .01 }),
-            settingSelect('Cache retention', 'cacheRetention', draft.cacheRetention, (capability?.cacheRetentions ?? ['none', 'short', 'long']).map(value => ({ value, label: value === 'none' ? 'None' : value === 'short' ? 'Short · 5 minutes' : 'Long · 1 hour' })), 'Eligible Anthropic prompt content can be cached for the selected duration.', locked, h),
+            settingSelect('Reasoning level', 'reasoning', draft.reasoning, [...retainedReasoning, { value: 'provider-default', label: capability?.defaultReasoning == null ? 'Provider default (unavailable)' : `Provider default (${reasoningLabel(capability.defaultReasoning)})` }, ...options(capability?.reasoningLevels ?? [])], capability?.thinkingMode === 'budget' ? 'These are thinking-token budget presets from the service adapter. The provider receives a token budget.' : capability?.capabilitySource === 'pi-ai-1.0.3' ? 'The API did not supply capability details. These levels come from the installed model adapter.' : capability?.capabilitySource === 'anthropic-api+pi-ai-1.0.3' ? 'Available levels use API details where supplied and installed adapter support for missing details.' : 'Effort levels supported by Anthropic and the installed model adapter.', locked || capability?.selectable !== true, h),
+            settingField('Thinking token budget', 'thinkingBudgetTokens', draft.thinkingBudgetTokens, thinkingAllowed ? 'Optional. Leave blank for the default budget for this reasoning level.' : capability?.thinkingMode === 'adaptive' ? 'This model adjusts thinking automatically; a fixed token budget is unavailable.' : 'Turn on reasoning to set a thinking budget.', locked || !thinkingAllowed || capability?.selectable !== true, h, { min: 1024, max: Math.max(1024, tokenMax - 1024) }),
+            settingField('Temperature', 'temperature', draft.temperature, temperatureAllowed ? 'Optional, 0–1. Leave blank for the provider default.' : 'Temperature is available only with a compatible model and reasoning off.', locked || !temperatureAllowed || capability?.selectable !== true, h, { min: 0, max: 1, step: .01 }),
+            settingSelect('Cache retention', 'cacheRetention', draft.cacheRetention, [...retainedCache, ...(capability?.cacheRetentions ?? []).map(value => ({ value, label: value === 'none' ? 'None' : value === 'short' ? 'Short · 5 minutes' : 'Long · 1 hour' }))], 'Eligible Anthropic prompt content can be cached for the selected duration.', locked || capability?.selectable !== true, h),
           ]),
         ]),
         h.fieldset([h.Class('discovery-settings-group')], [
@@ -684,8 +773,8 @@ const settingsView = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div([h.Class('discovery-inline')], [
         button('Cancel', ClosedSettings(), locked, 'quiet', h),
         button('Revert changes', RevertedSettings(), locked || !settingsDirty(model), 'quiet', h),
-        button(editor.preview._tag === 'Loading' ? 'Previewing…' : 'Preview settings', RequestedSettingsPreview(), locked || editor.preview._tag === 'Loading' || conflict, 'secondary', h),
-        button(isBusy(model) && model.mutation._tag === 'Sending' && model.mutation.request._tag === 'SettingsRequest' ? 'Saving settings…' : 'Save settings', RequestedSettingsSave(), locked || editor.preview._tag !== 'Success' || conflict || !settingsDirty(model), 'primary', h),
+        button(editor.preview._tag === 'Loading' ? 'Previewing…' : 'Preview settings', RequestedSettingsPreview(), locked || !reviewAvailable || editor.preview._tag === 'Loading' || conflict, 'secondary', h),
+        button(isBusy(model) && model.mutation._tag === 'Sending' && model.mutation.request._tag === 'SettingsRequest' ? 'Saving settings…' : 'Save settings', RequestedSettingsSave(), locked || !reviewAvailable || editor.preview._tag !== 'Success' || conflict || !settingsDirty(model), 'primary', h),
       ]),
     ]),
     h.p([h.Class('discovery-help')], ['Provider credentials stay on the service. Changing these preferences never changes your credentials.']),
@@ -816,6 +905,9 @@ const attemptsView = (snapshot: RunSnapshot, h: HtmlBuilder<Message>): Html => {
             item('Configured / minimum reservation', `${nullableDollars(values.attemptReservationUsd)} / ${dollars(frozen.minimumReservationUsd)}`),
             item('Spent / currently held', `${dollars(attempt.spentUsd)} / ${dollars(attempt.reservedUsd)}`),
             item('Started with these settings', displayDate(frozen.admittedAt)), item('Prompt version', frozen.promptVersion),
+            ...(frozen.catalogRevision === undefined ? [] : [item('Model catalog version', String(frozen.catalogRevision))]),
+            ...(frozen.catalogFetchedAt === undefined ? [] : [item('Model catalog fetched', displayDate(frozen.catalogFetchedAt))]),
+            ...(frozen.model === undefined ? [] : [item('Model metadata / pricing', `${frozen.model.capabilitySource} / ${frozen.model.pricingSource}`)]),
           ]),
           values.extraInstructions === '' ? h.p([h.Class('discovery-help')], ['No additional analysis instructions.']) : h.details([], [h.summary([], ['Additional instructions used']), h.pre([], [values.extraInstructions])]),
         ]),
@@ -945,7 +1037,7 @@ const logsView = (snapshot: RunSnapshot, h: HtmlBuilder<Message>): Html => h.det
 const runView = (model: Model, snapshot: RunSnapshot, h: HtmlBuilder<Message>): Html => {
   const run = snapshot.run
   const configuration = workspaceOf(model)?.configuration
-  const canAnalyze = run.input.evidenceMode === 'fixture' ? configuration?.fixtureEnabled : configuration?.analysisReady
+  const canAnalyze = run.input.evidenceMode === 'fixture' ? configuration?.fixtureEnabled : configuration?.analysisReady && (settingsOf(model) === undefined || settingsOf(model)?.catalog.status === 'fresh')
   const progress = run.pageCount === 0 ? 0 : Math.min(100, (run.capturedCount + run.failedCount) / run.pageCount * 100)
   return h.div([h.Class('discovery-run'), h.Attribute('data-run-phase', run.phase)], [
     h.section([h.Class('discovery-card discovery-run-status')], [

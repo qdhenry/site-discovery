@@ -7,6 +7,7 @@ import type { CaptureInput, RunSnapshot } from '../src/contract.ts'
 import { readConfig } from './config.ts'
 import { DiscoveryEngine } from './engine.ts'
 import { CaptureRejected, createProviders, mapCmsName } from './providers.ts'
+import { openTestEngine } from './test-fixtures/engine.ts'
 import { publicUrl } from './urls.ts'
 
 const input: CaptureInput = {
@@ -24,7 +25,7 @@ const use = async (
   options: Parameters<typeof DiscoveryEngine.open>[1] = {},
 ) => {
   const dir = await mkdtemp(join(tmpdir(), 'discovery-engine-'))
-  const engine = await DiscoveryEngine.open(
+  const engine = await openTestEngine(
     readConfig({ DISCOVERY_STATE_DIR: dir, DISCOVERY_FIXTURES: '1' }),
     options,
   )
@@ -79,7 +80,7 @@ describe('Discovery durable application', () => {
       expect(screenshot.mime).toBe('image/svg+xml')
       expect(new TextDecoder().decode(screenshot.bytes)).toContain('MOBILE')
       await engine.close()
-      const reopened = await DiscoveryEngine.open(
+      const reopened = await openTestEngine(
         readConfig({ DISCOVERY_STATE_DIR: dir, DISCOVERY_FIXTURES: '1' }),
       )
       try {

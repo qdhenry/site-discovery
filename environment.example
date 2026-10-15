@@ -5,8 +5,12 @@ DISCOVERY_STATE_DIR=
 # Omit to generate .local/discovery/owner-token (mode 0600); read locally to sign in.
 # DISCOVERY_OWNER_TOKEN=use-at-least-24-random-characters
 
-# Explicit deterministic fixture opt-in. No provider or website requests in fixture mode.
+# Explicit deterministic capture/analysis fixture opt-in.
 # DISCOVERY_FIXTURES=1
+# Separate model-metadata fixture, honored only with DISCOVERY_FIXTURES=1.
+# Both flags give deterministic acceptance without website/API/inference requests.
+# Catalog source is visibly fixture and cannot authorize live analysis.
+# DISCOVERY_MODEL_CATALOG_FIXTURE=1
 
 # Live Cloudflare Browser Run capture (formerly Browser Rendering).
 CLOUDFLARE_ACCOUNT_ID=
@@ -15,6 +19,8 @@ CLOUDFLARE_BROWSER_API_TOKEN=
 # Live Claude through an authenticated Cloudflare AI Gateway, key-in-request mode.
 CLOUDFLARE_AI_GATEWAY_ID=
 AI_GATEWAY_API_TOKEN=
+# Also authenticates direct server-side GET /v1/models; metadata is cached four hours.
+# A fresh live catalog is required for new live analysis. Inference uses the gateway.
 ANTHROPIC_API_KEY=
 # Model and budgets seed durable owner settings only when no saved settings exist.
 # Later changes belong in the authenticated Agent settings UI; saved values win.

@@ -28,7 +28,7 @@
       "trace": "e76a8b11d2b1858cecb82e58ebbbeec7cefcc27d26f46cec7f44d3adb240e163",
       "validation": "16763de6ab01dd599619dd05612ba4cd8a3c80fa6de6405a60428dab05669966"
     },
-    "compilerVersion": "1.36.0-p6",
+    "compilerVersion": "1.37.0-p6",
     "recipeDigests": {
       "analytics-dashboard@1": "699331fdad504b920eb7ebf7a601133450084e75e3dfb9950d200186cc25b45a",
       "booking-calendar@1": "a982c55f2962755933c5d530795d65113e58117270a051f7d3eb04f5bb5968ee",
@@ -44,14 +44,14 @@
       "shape:chat@1": "e9e2d8900b920c887e22f0e7f5af82b863ebbab118403ad55330b5d4692d10b2",
       "shape:console@1": "e3787b00b3e01f1b26a98cd764aa9c9d770dee19e488d138f85146b5522e9293",
       "shape:detail@1": "3618d25fd00f2742b774c0e1e9f137cacaeb6dcd84780ab1ac6f079a32e01fd2",
-      "shape:discovery@1": "66773ae43e2dac324f1d04261b2dcfdb54fd21e9ab56008411ae4ef4f113b435",
+      "shape:discovery@1": "5332c5b1b1305bea7ec93a3e835bb351ea5f5ea7ec91e943963727e28067d65c",
       "shape:form@1": "2b5b35d799924d7958cc09323476e836e6759c61bf437fba46f75063c05abab3",
       "shape:list@1": "8b2d78c24642eaf7df23096606169bb9a2ef2794632187b6ec271234786ae5de",
       "shape:metrics@1": "00bd3a5a59f0408fddab6de6f5d3d2b348e38e41fdeadd8c1824d4afd4032bf3",
       "shape:table@1": "c964849ded424140fc0f3ce12ac56edfaece7a1c5abe2f7798c3c6107b69f0af",
       "shape:view@1": "5d9fb017ac6edeb72a49cdc6e3379d86f23ee5dba6333c7b45f1401aaf502386"
     },
-    "snapshotSha256": "ba9f81c33d7b5e68590871d55d9e42fcc2f03e59c3265591cb2d6e612ee16527",
+    "snapshotSha256": "63b9a6c512127410d8955cfdf8fff4b1853f760e86c3d47403e32dfbad58ee9b",
     "targetMatrixDigest": "27087dc7636b0e8d70d4f62b841bfd88c64d051fe919ccfc68d9edfffc7cf8b0"
   },
   "generate": [
@@ -98,7 +98,7 @@
           "trace": "e76a8b11d2b1858cecb82e58ebbbeec7cefcc27d26f46cec7f44d3adb240e163",
           "validation": "16763de6ab01dd599619dd05612ba4cd8a3c80fa6de6405a60428dab05669966"
         },
-        "compilerVersion": "1.36.0-p6",
+        "compilerVersion": "1.37.0-p6",
         "recipeDigests": {
           "analytics-dashboard@1": "699331fdad504b920eb7ebf7a601133450084e75e3dfb9950d200186cc25b45a",
           "booking-calendar@1": "a982c55f2962755933c5d530795d65113e58117270a051f7d3eb04f5bb5968ee",
@@ -114,14 +114,14 @@
           "shape:chat@1": "e9e2d8900b920c887e22f0e7f5af82b863ebbab118403ad55330b5d4692d10b2",
           "shape:console@1": "e3787b00b3e01f1b26a98cd764aa9c9d770dee19e488d138f85146b5522e9293",
           "shape:detail@1": "3618d25fd00f2742b774c0e1e9f137cacaeb6dcd84780ab1ac6f079a32e01fd2",
-          "shape:discovery@1": "66773ae43e2dac324f1d04261b2dcfdb54fd21e9ab56008411ae4ef4f113b435",
+          "shape:discovery@1": "5332c5b1b1305bea7ec93a3e835bb351ea5f5ea7ec91e943963727e28067d65c",
           "shape:form@1": "2b5b35d799924d7958cc09323476e836e6759c61bf437fba46f75063c05abab3",
           "shape:list@1": "8b2d78c24642eaf7df23096606169bb9a2ef2794632187b6ec271234786ae5de",
           "shape:metrics@1": "00bd3a5a59f0408fddab6de6f5d3d2b348e38e41fdeadd8c1824d4afd4032bf3",
           "shape:table@1": "c964849ded424140fc0f3ce12ac56edfaece7a1c5abe2f7798c3c6107b69f0af",
           "shape:view@1": "5d9fb017ac6edeb72a49cdc6e3379d86f23ee5dba6333c7b45f1401aaf502386"
         },
-        "snapshotSha256": "ba9f81c33d7b5e68590871d55d9e42fcc2f03e59c3265591cb2d6e612ee16527",
+        "snapshotSha256": "63b9a6c512127410d8955cfdf8fff4b1853f760e86c3d47403e32dfbad58ee9b",
         "targetMatrixDigest": "27087dc7636b0e8d70d4f62b841bfd88c64d051fe919ccfc68d9edfffc7cf8b0"
       },
       "domain": {
@@ -179,6 +179,7 @@
           "DISCOVERY_ATTEMPT_RESERVATION_USD",
           "DISCOVERY_FIXTURES",
           "DISCOVERY_MODEL",
+          "DISCOVERY_MODEL_CATALOG_FIXTURE",
           "DISCOVERY_MONTHLY_LIMIT_USD",
           "DISCOVERY_OWNER_TOKEN",
           "DISCOVERY_RUN_LIMIT_USD",

@@ -28,6 +28,7 @@ import {
   validateSettings,
 } from './settings.ts'
 import { openStorage } from './sqlite.ts'
+import { openTestEngine } from './test-fixtures/engine.ts'
 
 const input: CaptureInput = {
   mode: 'batch',
@@ -165,7 +166,7 @@ test('settings CAS, command replay, preview and restart preserve explicit values
   const dir = await mkdtemp(join(tmpdir(), 'discovery-settings-'))
   const config = configFor(dir)
   let calls = 0
-  let engine = await DiscoveryEngine.open(config, {
+  let engine = await openTestEngine(config, {
     providers: {
       ...createProviders(config),
       analyze: async () => {
@@ -219,7 +220,7 @@ test('settings CAS, command replay, preview and restart preserve explicit values
     ).rejects.toMatchObject({ code: 'validation' })
     expect(calls).toBe(0)
     await engine.close()
-    engine = await DiscoveryEngine.open({
+    engine = await openTestEngine({
       ...config,
       model: 'claude-haiku-4-5',
       runLimitUsd: 999,
@@ -261,7 +262,7 @@ test('one admitted multi-page job keeps its settings while retry uses latest val
       return fixture.analyze(page, html, images, signal, settings)
     },
   }
-  const engine = await DiscoveryEngine.open(config, { providers })
+  const engine = await openTestEngine(config, { providers })
   try {
     const run = await capture(engine)
     await start(engine, run)
@@ -341,7 +342,7 @@ test('lowering current caps blocks the next page without changing the job snapsh
       return { ...result, usage: { ...result.usage, costUsd: 0.25 } }
     },
   }
-  engine = await DiscoveryEngine.open(config, { providers })
+  engine = await openTestEngine(config, { providers })
   try {
     const run = await capture(engine, true)
     await start(engine, run)
@@ -365,7 +366,7 @@ test('evidence settings select only requested screenshots and unavailable image-
   const config = configFor(dir)
   const fixture = createProviders(config)
   const observed: string[][] = []
-  const engine = await DiscoveryEngine.open(config, {
+  const engine = await openTestEngine(config, {
     providers: {
       ...fixture,
       analyze: (p, h, images, signal, settings) => {
@@ -432,7 +433,7 @@ test('real version-one Pi document delta chain migrates library, receipts, comma
   )
   const dir = await mkdtemp(join(tmpdir(), 'discovery-settings-v1-target-'))
   const config = configFor(dir)
-  const original = await DiscoveryEngine.open(configFor(originalDir))
+  const original = await openTestEngine(configFor(originalDir))
   let legacyValue: JsonObject = {}
   let runId = ''
   let pageId = ''
@@ -566,7 +567,7 @@ test('real version-one Pi document delta chain migrates library, receipts, comma
   }, BACKGROUND_CONTEXT)
   await harness.close(BACKGROUND_CONTEXT)
   let calls = 0
-  const engine = await DiscoveryEngine.open(config, {
+  const engine = await openTestEngine(config, {
     providers: {
       ...providers,
       analyze: async () => {

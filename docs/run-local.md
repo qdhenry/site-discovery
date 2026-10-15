@@ -23,17 +23,17 @@ Live capture needs `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_BROWSER_API_TOKEN`. L
 - `ANTHROPIC_API_KEY`
 - `DISCOVERY_RUN_LIMIT_USD`, `DISCOVERY_MONTHLY_LIMIT_USD` and `DISCOVERY_ATTEMPT_RESERVATION_USD` (or the same limits saved in Agent settings)
 
-`DISCOVERY_MODEL` defaults to `claude-sonnet-4-6`. The Anthropic key and the gateway token authenticate independently. The provider uses Anthropic key-in-request through Cloudflare AI Gateway. Gateway-stored BYOK is not implemented, and there is no direct-to-Anthropic fallback. The [README](../README.md#cloudflare-and-anthropic-setup) walks through creating each credential.
+`DISCOVERY_MODEL` defaults to `claude-sonnet-4-6`. The Anthropic key and the gateway token authenticate independently. The provider uses Anthropic key-in-request through Cloudflare AI Gateway. Gateway-stored BYOK is not implemented, and there is no direct-to-Anthropic inference fallback. Model metadata is fetched directly from the Anthropic Models API and cached in SQLite for four hours; **Agent settings → Refresh model catalog** refreshes it early. The [README](../README.md#cloudflare-and-anthropic-setup) walks through creating each credential.
 
 Set spending limits deliberately. A reservation must cover the model's accepted context at its highest input/cache rate plus the capped output. The service reports and enforces that minimum before each request. An unknown earlier call keeps its reservation even after a retry or history deletion. Viewing pages or capturing screenshots never calls a model.
 
 ## Fixture demo
 
 ```sh
-DISCOVERY_FIXTURES=1 bun run dev
+DISCOVERY_FIXTURES=1 DISCOVERY_MODEL_CATALOG_FIXTURE=1 bun run dev
 ```
 
-Choose **Fixture** in the form to try capture, analysis, review, duplicates, save and export without provider calls. Every fixture run is labeled. Live mode never falls back to fixtures.
+Choose **Fixture** in the form to try capture, analysis, review, duplicates, save and export without provider calls. Every fixture run is labeled. The optional `DISCOVERY_MODEL_CATALOG_FIXTURE=1` flag supplies an explicitly labeled offline model catalog, requires `DISCOVERY_FIXTURES=1`, and cannot authorize live analysis. Omit that flag to retrieve real model metadata. Live mode never falls back to fixtures.
 
 The repeatable browser acceptance script uses a temporary database and a random token, then shuts down its service:
 

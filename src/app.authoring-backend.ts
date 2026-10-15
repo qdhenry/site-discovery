@@ -44,7 +44,6 @@ export const ReachBackendService = Command.define('ReachBackendService', {
           `${apiUrl.replace(/\/$/u, '')}/rpc/`,
           {
             method: 'POST',
-            // The health RPC is session-gated; the :5193 mini-host is cross-origin.
             credentials: 'include',
             headers: { 'content-type': 'application/ndjson' },
             body:

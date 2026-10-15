@@ -2,7 +2,9 @@ import { expect, test } from 'bun:test'
 
 import type { Page } from '../src/contract.ts'
 import type { AnalysisSettingsValues } from '../src/contract.ts'
+import { fixtureModelRows } from './catalog-fixture.ts'
 import { readConfig } from './config.ts'
+import { type CatalogView, mergeApiModels } from './model-catalog.ts'
 import {
   AnalysisRejected,
   AnalysisUnknown,
@@ -131,6 +133,77 @@ test('pinned pi-ai sends one capped Claude request through gateway with independ
   expect(result.findings).toHaveLength(0)
   expect(result.usage.inputTokens).toBe(100)
   expect(result.usage.costUsd).toBeGreaterThan(0)
+})
+
+test('the actual Pi request and measured charge use the admitted execution model limits and price snapshot', async () => {
+  let calls = 0
+  const providers = createProviders(
+    config,
+    responseTransport('{"findings":[]}', 'end_turn', async request => {
+      calls++
+      const body: {
+        max_tokens: number
+        thinking: { budget_tokens: number }
+        fallbacks?: unknown
+      } = await request.json()
+      expect(body.max_tokens).toBe(12000)
+      expect(body.thinking.budget_tokens).toBe(10976)
+      expect(body.fallbacks).toBeUndefined()
+    }),
+  )
+  const apiRow = fixtureModelRows(providers.models).find(
+    m => m.id === 'claude-haiku-4-5-20251001',
+  )!
+  const catalog: CatalogView = {
+    models: mergeApiModels(
+      [{ ...apiRow, max_tokens: 12000, max_input_tokens: 100000 }],
+      providers.models,
+    ),
+    status: {
+      source: 'anthropic-api',
+      status: 'fresh',
+      revision: 2,
+      fetchedAt: '2026-01-01T00:00:00Z',
+      expiresAt: '2026-01-01T04:00:00Z',
+      lastAttemptAt: '2026-01-01T00:00:00Z',
+      nextRetryAt: null,
+      error: '',
+      ttlSeconds: 14400,
+      modelCount: 1,
+    },
+  }
+  const initial = initialSettings(config, providers.models)
+  const values: AnalysisSettingsValues = {
+    ...initial.values,
+    modelId: apiRow.id,
+    reasoning: 'high',
+    maxOutputTokens: 10000,
+  }
+  const evaluation = evaluateSettings(
+    config,
+    providers.models,
+    values,
+    undefined,
+    catalog,
+  )
+  expect(evaluation.effectiveMaxOutputTokens).toBe(12000)
+  const snapshot = snapshotSettings({ ...initial, values }, evaluation, catalog)
+  const frozen = {
+    ...providers.models.getModel('anthropic', apiRow.id)!,
+    contextWindow: 100000,
+    maxTokens: 12000,
+    cost: { input: 10, output: 50, cacheRead: 1, cacheWrite: 12.5 },
+  }
+  const result = await providers.analyze(
+    page,
+    '',
+    [],
+    new AbortController().signal,
+    snapshot,
+    JSON.stringify(frozen),
+  )
+  expect(calls).toBe(1)
+  expect(result.usage.costUsd).toBeCloseTo(0.002, 8)
 })
 
 test('settings map adaptive reasoning, legacy thinking expansion, DOM focus and compatible temperature into actual pinned requests', async () => {

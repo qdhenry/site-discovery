@@ -34,7 +34,13 @@ import type {
   Workspace,
 } from '../src/contract.ts'
 import { DiscoveryError } from '../src/contract.ts'
+import { fixtureCatalogOptions } from './catalog-fixture.ts'
 import { type Config, configuration, fail } from './config.ts'
+import {
+  type CatalogOptions,
+  type CatalogView,
+  ModelCatalog,
+} from './model-catalog.ts'
 import {
   AnalysisRejected,
   AnalysisUnknown,
@@ -44,7 +50,6 @@ import {
   mapCmsName,
 } from './providers.ts'
 import {
-  analysisModels,
   evaluateSettings,
   initialSettings,
   snapshotSettings,
@@ -53,13 +58,11 @@ import {
 import { acquireStorageOwner, openStorage } from './sqlite.ts'
 import { discoverUrls, validateInput } from './urls.ts'
 
-type Mutable<T> = {
-  -readonly [K in keyof T]: T[K] extends readonly (infer U)[]
-    ? Mutable<U>[]
-    : T[K] extends object
-      ? Mutable<T[K]>
-      : T[K]
-}
+type Mutable<T> = T extends readonly (infer U)[]
+  ? Mutable<U>[]
+  : T extends object
+    ? { -readonly [K in keyof T]: Mutable<T[K]> }
+    : T
 type Artifact = {
   html: string
   desktop: string
@@ -77,6 +80,7 @@ type StoredRun = {
   stage: 'capture' | 'analysis'
   tasks: number[]
   analysisSettings: Mutable<AnalysisSettingsSnapshot> | null
+  executionModelJson?: string
 }
 type Attempt = {
   id: string
@@ -94,6 +98,7 @@ type Attempt = {
   analysisSettings: Mutable<AnalysisSettingsSnapshot> | null
   rawResponseTruncated: boolean
   rawResponseChars: number
+  executionModelJson?: string
 }
 type AppState = {
   settings: Mutable<AnalysisSettings> | null
@@ -282,12 +287,14 @@ type WorkResult = { runId: string }
 type Runtime = TaskRuntime<WorkInput, WorkCheckpoint, WorkResult, object>
 type WorkRecord = RunningTask<WorkInput, WorkCheckpoint, WorkResult>
 export type EngineOptions = {
+  catalog?: CatalogOptions
   providers?: Providers
   afterReservation?: (attempt: Attempt) => Promise<void>
   beforeSaveCommit?: () => void
 }
 
 export class DiscoveryEngine {
+  private readonly catalog: ModelCatalog
   private constructor(
     readonly config: Config,
     readonly harness: Harness,
@@ -295,7 +302,17 @@ export class DiscoveryEngine {
     private readonly releaseOwner: () => void,
     private readonly task: ReturnType<typeof makeWorkTask>,
     private readonly options: EngineOptions,
-  ) {}
+  ) {
+    this.catalog = new ModelCatalog(
+      harness,
+      providers.models,
+      config.anthropicKey,
+      options.catalog ??
+        (config.modelCatalogFixture
+          ? fixtureCatalogOptions(providers.models)
+          : {}),
+    )
+  }
   static async open(
     config: Config,
     options: EngineOptions = {},
@@ -424,9 +441,10 @@ export class DiscoveryEngine {
     }
   }
   async workspace(sessionId: string): Promise<Workspace> {
+    const catalog = await this.catalog.ensure()
     const state = await this.state()
     const config = clone(configuration(this.config))
-    const evaluation = this.evaluate(state.settings!.values)
+    const evaluation = this.readEvaluation(state.settings!.values, catalog)
     config.analysisReady = evaluation.analysisReady
     config.missingAnalysis = [...evaluation.issues]
     config.model = state.settings!.values.modelId
@@ -442,33 +460,57 @@ export class DiscoveryEngine {
       sessionId,
     }
   }
-  private evaluate(values: AnalysisSettingsValues) {
+  private evaluate(values: AnalysisSettingsValues, catalog?: CatalogView) {
     return evaluateSettings(
       this.config,
       this.providers.models,
       values,
       this.options.providers?.reservationBoundUsd,
+      catalog,
     )
   }
-  private settingsView(settings: AnalysisSettings): SettingsSnapshot {
-    return {
-      settings,
-      models: analysisModels(this.providers.models),
-      evaluation: this.evaluate(settings.values),
+  private readEvaluation(values: AnalysisSettingsValues, catalog: CatalogView) {
+    try {
+      return this.evaluate(values, catalog)
+    } catch (error) {
+      if (!(error instanceof DiscoveryError)) throw error
+      return {
+        analysisReady: false,
+        issues: [error.message],
+        minimumReservationUsd: 0,
+        effectiveMaxOutputTokens: values.maxOutputTokens,
+        effectiveThinkingBudgetTokens: null,
+        effectiveReasoning: values.reasoning ?? ('off' as const),
+        catalogRevision: catalog.status.revision,
+      }
     }
   }
-  async getSettings(): Promise<SettingsSnapshot> {
-    return this.settingsView((await this.state()).settings!)
+  private settingsView(
+    settings: AnalysisSettings,
+    catalog: CatalogView,
+  ): SettingsSnapshot {
+    return {
+      settings,
+      models: catalog.models,
+      evaluation: this.readEvaluation(settings.values, catalog),
+      catalog: catalog.status,
+    }
+  }
+  async getSettings(force = false): Promise<SettingsSnapshot> {
+    const catalog = await this.catalog.ensure(force)
+    return this.settingsView((await this.state()).settings!, catalog)
   }
   async previewSettings(values: AnalysisSettingsValues) {
-    validateSettings(this.providers.models, values)
-    return this.evaluate(values)
+    const catalog = await this.catalog.ensure()
+    validateSettings(this.providers.models, values, catalog.models)
+    return this.evaluate(values, catalog)
   }
   async saveSettings(input: {
     commandId: string
     expectedRevision: number
     values: AnalysisSettingsValues
   }): Promise<SettingsSnapshot> {
+    const catalog = await this.catalog.ensure()
     return this.harness.commit(async tx => {
       const state = await tx.doc(DiscoveryState)
       const previous = commandPrevious<SettingsSnapshot>(
@@ -483,13 +525,17 @@ export class DiscoveryEngine {
           'conflict',
           'Analysis settings changed. Reload saved settings before saving your edits.',
         )
-      const values = validateSettings(this.providers.models, input.values)
+      const values = validateSettings(
+        this.providers.models,
+        input.values,
+        catalog.models,
+      )
       state.settings = clone({
         revision: state.settings!.revision + 1,
         updatedAt: now(),
         values,
       })
-      const response = this.settingsView(clone(state.settings))
+      const response = this.settingsView(clone(state.settings), catalog)
       recordCommand(state, input.commandId, 'settings', input, response)
       return response
     }, BACKGROUND_CONTEXT)
@@ -553,11 +599,25 @@ export class DiscoveryEngine {
           'configuration',
           'Legacy analysis has no settings snapshot; explicitly retry to select current settings',
         )
-      const evaluation = this.evaluate(settings.values)
-      if (!evaluation.analysisReady)
+      const values = settings.values
+      if (
+        !this.config.accountId ||
+        !this.config.gatewayId ||
+        !this.config.gatewayToken ||
+        !this.config.anthropicKey ||
+        values.runLimitUsd === null ||
+        values.monthlyLimitUsd === null ||
+        values.attemptReservationUsd === null ||
+        values.attemptReservationUsd < settings.minimumReservationUsd ||
+        values.attemptReservationUsd > values.runLimitUsd ||
+        values.attemptReservationUsd > values.monthlyLimitUsd ||
+        (settings.model &&
+          !settings.model.supportsImages &&
+          values.screenshotEvidence !== 'none')
+      )
         return fail(
           'configuration',
-          `Live analysis needs ${evaluation.issues.join('; ')}`,
+          'Live analysis needs configured credentials, compatible evidence, and spending limits covering the admitted reservation',
         )
     }
     if (!analysis && !cfg.captureReady)
@@ -565,6 +625,34 @@ export class DiscoveryEngine {
         'configuration',
         `Live capture needs ${cfg.missingCapture.join(', ')}`,
       )
+  }
+  private requireCatalog(input: CaptureInput, catalog: CatalogView) {
+    if (
+      input.evidenceMode === 'live' &&
+      (catalog.status.status !== 'fresh' ||
+        catalog.status.source !== 'anthropic-api')
+    )
+      fail(
+        'configuration',
+        'Live analysis requires a fresh Anthropic API model catalog; refresh the model catalog before retrying',
+      )
+  }
+  private executionModel(settings: AnalysisSettingsSnapshot) {
+    const model = this.providers.models.getModel(
+      'anthropic',
+      settings.values.modelId,
+    )
+    if (!model || !settings.model?.selectable)
+      return fail(
+        'configuration',
+        'The selected API model is unavailable to the verified adapter',
+      )
+    return JSON.stringify({
+      ...model,
+      contextWindow: settings.model.effectiveContextWindow,
+      maxTokens: settings.model.effectiveMaxOutputTokens,
+      compat: { ...model.compat, allowedFallbackModels: [] },
+    })
   }
   async createCapture(input: {
     projectId: string
@@ -644,6 +732,7 @@ export class DiscoveryEngine {
     expectedRevision: number
     pageIds: readonly string[]
   }): Promise<RunSnapshot> {
+    const catalog = await this.catalog.ensure()
     await this.harness.commit(async tx => {
       const state = await tx.doc(DiscoveryState)
       if (commandPrevious(state, input.commandId, 'analysis', input)) return
@@ -651,8 +740,10 @@ export class DiscoveryEngine {
       checkRevision(stored, input.expectedRevision)
       const settings = snapshotSettings(
         state.settings!,
-        this.evaluate(state.settings!.values),
+        this.evaluate(state.settings!.values, catalog),
+        catalog,
       )
+      this.requireCatalog(stored.run.input, catalog)
       this.requireMode(stored.run.input, true, settings)
       if (state.activeRunId)
         return fail('busy', 'One run is already active; resolve it first')
@@ -675,6 +766,7 @@ export class DiscoveryEngine {
       stored.selected = selected
       stored.stage = 'analysis'
       stored.analysisSettings = clone(settings)
+      stored.executionModelJson = this.executionModel(settings)
       stored.run.phase = 'analyzing'
       stored.run.error = ''
       state.activeRunId = input.runId
@@ -708,6 +800,7 @@ export class DiscoveryEngine {
     commandId: string
     expectedRevision: number
   }): Promise<RunSnapshot> {
+    const catalog = await this.catalog.ensure()
     await this.harness.commit(async tx => {
       const state = await tx.doc(DiscoveryState)
       if (commandPrevious(state, input.commandId, 'retry', input)) return
@@ -721,11 +814,15 @@ export class DiscoveryEngine {
         stored.stage === 'analysis'
           ? snapshotSettings(
               state.settings!,
-              this.evaluate(state.settings!.values),
+              this.evaluate(state.settings!.values, catalog),
+              catalog,
             )
           : null
+      if (stored.stage === 'analysis')
+        this.requireCatalog(stored.run.input, catalog)
       this.requireMode(stored.run.input, stored.stage === 'analysis', settings)
       stored.analysisSettings = settings ? clone(settings) : null
+      if (settings) stored.executionModelJson = this.executionModel(settings)
       for (const page of stored.pages)
         if (page.status === 'requires_retry' || page.status === 'failed') {
           page.status = stored.stage === 'capture' ? 'queued' : 'captured'
@@ -963,9 +1060,11 @@ export class DiscoveryEngine {
           runs: Object.values(state.runs)
             .filter(r => r.run.projectId === projectId)
             .map(r => this.snapshot(state, projectId, r.run.id)),
-          analysisEvidence: Object.values(state.attempts).filter(
-            a => a.stage === 'analysis' && a.projectId === projectId,
-          ),
+          analysisEvidence: Object.values(state.attempts)
+            .filter(a => a.stage === 'analysis' && a.projectId === projectId)
+            .map(
+              ({ executionModelJson: _privateModel, ...evidence }) => evidence,
+            ),
           audits: state.audits.filter(a => a.projectId === projectId),
         },
         null,
@@ -1271,6 +1370,14 @@ export class DiscoveryEngine {
           '',
           page.id,
         )
+      if (stage === 'analysis' && !stored.executionModelJson)
+        return await this.block(
+          task,
+          runtime,
+          'Legacy analysis has no execution model snapshot. Explicitly retry to use current API model metadata.',
+          '',
+          page.id,
+        )
       this.requireMode(stored.run.input, stage === 'analysis', settings)
       const analysisImages =
         stage === 'analysis'
@@ -1370,6 +1477,9 @@ export class DiscoveryEngine {
           analysisSettings: stage === 'analysis' ? clone(settings!) : null,
           rawResponseTruncated: false,
           rawResponseChars: 0,
+          ...(stage === 'analysis'
+            ? { executionModelJson: stored.executionModelJson! }
+            : {}),
         }
         const currentPage = current.pages.find(p => p.id === page.id)!
         currentPage.status = stage === 'capture' ? 'capturing' : 'analyzing'
@@ -1445,6 +1555,7 @@ export class DiscoveryEngine {
           analysisImages,
           runtime.signal,
           settings!,
+          stored.executionModelJson!,
         )
         await runtime.commit(async tx => {
           const app = await tx.doc(DiscoveryState)

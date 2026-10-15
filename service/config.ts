@@ -13,6 +13,7 @@ export type Environment = Readonly<Record<string, string | undefined>>
 export type Config = {
   stateDir: string
   fixtureEnabled: boolean
+  modelCatalogFixture: boolean
   accountId: string
   browserToken: string
   gatewayToken: string
@@ -31,6 +32,9 @@ const positive = (raw: string | undefined): number => {
 export const readConfig = (env: Environment = process.env): Config => ({
   stateDir: resolve(env.DISCOVERY_STATE_DIR || '.local/discovery'),
   fixtureEnabled: env.DISCOVERY_FIXTURES === '1',
+  modelCatalogFixture:
+    env.DISCOVERY_FIXTURES === '1' &&
+    env.DISCOVERY_MODEL_CATALOG_FIXTURE === '1',
   accountId: env.CLOUDFLARE_ACCOUNT_ID || '',
   browserToken: env.CLOUDFLARE_BROWSER_API_TOKEN || '',
   gatewayToken: env.AI_GATEWAY_API_TOKEN || '',

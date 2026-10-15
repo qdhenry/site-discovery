@@ -19,3 +19,6 @@ The settled behavior behind Site Discovery, and the tests that check each decisi
 | Save rules | Keep both creates a distinct row; merge target must belong to project; saved CMS names exactly match reviewed preview | Create/merge and naming tests |
 | UI | Foldkit app with MicroDots styling, full workflow in one panel | Real DOM/service traffic and lifecycle (`bun run test:browser`) |
 | Lifecycle | Browser attrs select context only; stale async answers fenced; UI disposal never cancels service tasks | Attribute switch, unmount/remount, service reconnect |
+| Agent settings | Owner-editable model, output, reasoning, evidence, timeout, cache and budget controls; preview and revisioned save remain separate from analysis | Settings validation, conflict/idempotency, immutable job and attempt snapshots |
+| Model catalog | Direct Anthropic Models API; four-hour persisted credential-scoped cache, manual refresh and explicit freshness/errors | TTL/restart/coalescing/pagination/empty/malformed/key-change/failure tests |
+| Model compatibility | API supplies availability and reported capabilities; effective limits respect pinned adapter bounds, pricing source is explicit, unknown adapters cannot run | API/adapter intersections, disabled models, frozen execution model and pricing |

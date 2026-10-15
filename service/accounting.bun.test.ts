@@ -11,6 +11,7 @@ import {
   type Providers,
   createProviders,
 } from './providers.ts'
+import { openTestEngine } from './test-fixtures/engine.ts'
 
 const input: CaptureInput = {
   mode: 'single',
@@ -52,7 +53,7 @@ async function use(
     DISCOVERY_ATTEMPT_RESERVATION_USD: '0.01',
   })
   const fixture = createProviders(config)
-  const engine = await DiscoveryEngine.open(config, {
+  const engine = await openTestEngine(config, {
     providers: {
       ...fixture,
       reservationBoundUsd: 0.001,

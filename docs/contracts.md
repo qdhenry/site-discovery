@@ -16,6 +16,10 @@ Every operation declares `DiscoveryError`. Its codes are unauthorized, forbidden
 
 | Operation | Inputs | Result |
 |---|---|---|
+| getDiscoverySettings | none | Saved settings, API model catalog, cache status and readiness evaluation |
+| refreshDiscoveryModels | none | Force metadata refresh and return the settings snapshot; never starts analysis |
+| previewDiscoverySettings | values | Validated effective reasoning/output limits, minimum reservation and readiness |
+| saveDiscoverySettings | commandId, expectedRevision, values | Idempotent settings update with compare-and-set revision |
 | getDiscoveryWorkspace | none | Projects, nonsecret configuration, budget, active run and session ID |
 | createDiscoveryProject | commandId, name | Project |
 | getDiscoveryHistory | projectId | Run summaries |
@@ -49,3 +53,9 @@ Save choices are create, merge or skip. Keep both uses create. A preview gives t
 A persisted inflight external attempt found after restart is uncertain and never automatically resent. Unknown analysis retains its liability; a known response stores measured usage/evidence, and a preflight failure makes no model call and reserves nothing. Retry makes a new physical attempt and reservation. Successful checkpoints remain reusable. Closing or remounting the UI does not own or cancel these tasks.
 
 The UI fences asynchronous replies by session/API/project/run generation. Changing attributes clears superseded data before requesting the new context. Export is an explicit local download. There is no automatic save, fallback detector, deployment or external CMS integration.
+
+## Settings and model provenance
+
+Model metadata is fetched server-side from Anthropic, cached durably for four hours, and exposed as domain-level `AnalysisModel` and `ModelCatalogStatus` values. Provider credentials, credential-scope fingerprints and private execution-model JSON are excluded from browser responses and project exports. The API catalog owns availability and supplied capabilities; the pinned adapter provides separately labeled execution compatibility and pricing.
+
+Analysis and explicit retry freeze settings and resolved model metadata at admission. Each physical attempt retains its public settings snapshot. A later catalog refresh cannot change an admitted job. Legacy work without a resolved execution snapshot requires explicit retry before further model calls. Unknown external outcomes retain their reservations.

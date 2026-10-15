@@ -1,4 +1,3 @@
-import { makeRpcService } from '@bespokeagentics/microdots-runtime/service'
 import { expect, test } from 'bun:test'
 import { Effect, Fiber, Layer } from 'effect'
 import { HttpRouter } from 'effect/unstable/http'
@@ -6,6 +5,8 @@ import { existsSync } from 'node:fs'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+
+import { makeRpcService } from '@bespokeagentics/microdots-runtime/service'
 
 import { MINI_HOST_ORIGIN } from './auth.ts'
 import { RpcAppLayer } from './handlers.ts'
@@ -17,10 +18,12 @@ test('HTTP transport gates sessions, RPC and screenshots; forged RPC headers can
   const before = {
     dir: process.env.DISCOVERY_STATE_DIR,
     fixtures: process.env.DISCOVERY_FIXTURES,
+    catalogFixture: process.env.DISCOVERY_MODEL_CATALOG_FIXTURE,
     token: process.env.DISCOVERY_OWNER_TOKEN,
   }
   process.env.DISCOVERY_STATE_DIR = dir
   process.env.DISCOVERY_FIXTURES = '1'
+  process.env.DISCOVERY_MODEL_CATALOG_FIXTURE = '1'
   process.env.DISCOVERY_OWNER_TOKEN = 'deterministic-owner-token-for-wire-test'
   const port = 41328
   const origin = `http://127.0.0.1:${port}`
@@ -194,6 +197,7 @@ test('HTTP transport gates sessions, RPC and screenshots; forged RPC headers can
     for (const [key, value] of [
       ['DISCOVERY_STATE_DIR', before.dir],
       ['DISCOVERY_FIXTURES', before.fixtures],
+      ['DISCOVERY_MODEL_CATALOG_FIXTURE', before.catalogFixture],
       ['DISCOVERY_OWNER_TOKEN', before.token],
     ] as const) {
       if (value === undefined) delete process.env[key]
@@ -217,11 +221,14 @@ test('the :5193 mini-host crosses credentialed CORS on the real service stack; o
   const before = {
     dir: process.env.DISCOVERY_STATE_DIR,
     fixtures: process.env.DISCOVERY_FIXTURES,
+    catalogFixture: process.env.DISCOVERY_MODEL_CATALOG_FIXTURE,
     token: process.env.DISCOVERY_OWNER_TOKEN,
   }
   process.env.DISCOVERY_STATE_DIR = dir
   process.env.DISCOVERY_FIXTURES = '1'
-  process.env.DISCOVERY_OWNER_TOKEN = 'deterministic-owner-token-for-minihost-test'
+  process.env.DISCOVERY_MODEL_CATALOG_FIXTURE = '1'
+  process.env.DISCOVERY_OWNER_TOKEN =
+    'deterministic-owner-token-for-minihost-test'
   const port = 41329
   await initializeRuntime(port)
   // The same options shape-main.ts passes, on a test port.
@@ -232,7 +239,10 @@ test('the :5193 mini-host crosses credentialed CORS on the real service stack; o
         port,
         host: '127.0.0.1',
         extraRoutes: ExtraRoutes,
-        allowedOrigins: [`http://127.0.0.1:${port}`, `http://localhost:${port}`],
+        allowedOrigins: [
+          `http://127.0.0.1:${port}`,
+          `http://localhost:${port}`,
+        ],
         allowedMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
         routeOwnedCorsPrefixes: ROUTE_OWNED_CORS_PREFIXES,
         trace: 'off',
@@ -306,7 +316,10 @@ test('the :5193 mini-host crosses credentialed CORS on the real service stack; o
         'content-type',
       )
     }
-    for (const foreign of ['http://localhost:5194', 'https://attacker.example']) {
+    for (const foreign of [
+      'http://localhost:5194',
+      'https://attacker.example',
+    ]) {
       const preflight = await call('/rpc', {
         method: 'OPTIONS',
         origin: foreign,
@@ -329,22 +342,37 @@ test('the :5193 mini-host crosses credentialed CORS on the real service stack; o
     })
     expect(signedIn.status).toBe(200)
     expect(allowOrigin(signedIn)).toBe(MINI_HOST_ORIGIN)
-    expect(signedIn.headers.get('access-control-allow-credentials')).toBe('true')
+    expect(signedIn.headers.get('access-control-allow-credentials')).toBe(
+      'true',
+    )
     expect(signedIn.headers.get('set-cookie')).toContain('SameSite=Strict')
     const cookie = signedIn.headers.get('set-cookie')!.split(';')[0]!
 
-    const workspace = await rpc('getDiscoveryWorkspace', MINI_HOST_ORIGIN, cookie)
+    const workspace = await rpc(
+      'getDiscoveryWorkspace',
+      MINI_HOST_ORIGIN,
+      cookie,
+    )
     expect(workspace.status).toBe(200)
     expect(allowOrigin(workspace)).toBe(MINI_HOST_ORIGIN)
     expect(await workspace.text()).toContain('fixtureEnabled')
     // The generated backend element's health probe posts to `/rpc/`.
-    const slashed = await rpc('getDiscoveryWorkspace', MINI_HOST_ORIGIN, cookie, '/rpc/')
+    const slashed = await rpc(
+      'getDiscoveryWorkspace',
+      MINI_HOST_ORIGIN,
+      cookie,
+      '/rpc/',
+    )
     expect(slashed.status).toBe(200)
     expect(allowOrigin(slashed)).toBe(MINI_HOST_ORIGIN)
     expect(await slashed.text()).toContain('fixtureEnabled')
 
     // The cookie alone never authorizes another origin or a cross-site request.
-    const foreign = await rpc('getDiscoveryWorkspace', 'http://localhost:5194', cookie)
+    const foreign = await rpc(
+      'getDiscoveryWorkspace',
+      'http://localhost:5194',
+      cookie,
+    )
     expect(foreign.status).toBe(403)
     expect(allowOrigin(foreign)).toBeNull()
     const crossSite = await call('/rpc', {
@@ -369,6 +397,7 @@ test('the :5193 mini-host crosses credentialed CORS on the real service stack; o
     for (const [key, value] of [
       ['DISCOVERY_STATE_DIR', before.dir],
       ['DISCOVERY_FIXTURES', before.fixtures],
+      ['DISCOVERY_MODEL_CATALOG_FIXTURE', before.catalogFixture],
       ['DISCOVERY_OWNER_TOKEN', before.token],
     ] as const) {
       if (value === undefined) delete process.env[key]

@@ -106,15 +106,44 @@ export type AnalysisSettings = typeof AnalysisSettings.Type
 export const AnalysisModel = S.Struct({
   id: S.String,
   label: S.String,
-  contextWindow: S.Int,
-  maxOutputTokens: S.Int,
+  contextWindow: S.NullOr(S.Int),
+  maxOutputTokens: S.NullOr(S.Int),
+  effectiveContextWindow: S.Int,
+  effectiveMaxOutputTokens: S.Int,
   reasoningLevels: S.Array(ReasoningLevel),
-  defaultReasoning: ReasoningLevel,
-  thinkingMode: S.Literals(['budget', 'adaptive']),
+  defaultReasoning: S.NullOr(ReasoningLevel),
+  thinkingMode: S.Literals(['budget', 'adaptive', 'unsupported']),
   supportsTemperature: S.Boolean,
+  supportsImages: S.Boolean,
   cacheRetentions: S.Array(CacheRetention),
+  selectable: S.Boolean,
+  disabledReason: S.String,
+  lifecycle: S.Literals(['active', 'deprecated', 'retired', 'unknown']),
+  createdAt: S.String,
+  deprecatedAt: S.NullOr(S.String),
+  retiresAt: S.NullOr(S.String),
+  pricingSource: S.Literals(['pi-ai-1.0.3', 'unavailable']),
+  capabilitySource: S.Literals([
+    'anthropic-api',
+    'anthropic-api+pi-ai-1.0.3',
+    'pi-ai-1.0.3',
+    'unavailable',
+  ]),
 })
 export type AnalysisModel = typeof AnalysisModel.Type
+export const ModelCatalogStatus = S.Struct({
+  source: S.Literals(['anthropic-api', 'fixture']),
+  status: S.Literals(['fresh', 'stale', 'unavailable']),
+  revision: S.Int,
+  fetchedAt: S.NullOr(S.String),
+  expiresAt: S.NullOr(S.String),
+  lastAttemptAt: S.NullOr(S.String),
+  nextRetryAt: S.NullOr(S.String),
+  error: S.String,
+  ttlSeconds: S.Int,
+  modelCount: S.Int,
+})
+export type ModelCatalogStatus = typeof ModelCatalogStatus.Type
 export const SettingsEvaluation = S.Struct({
   analysisReady: S.Boolean,
   issues: S.Array(S.String),
@@ -122,12 +151,14 @@ export const SettingsEvaluation = S.Struct({
   effectiveMaxOutputTokens: S.Int,
   effectiveThinkingBudgetTokens: S.NullOr(S.Int),
   effectiveReasoning: ReasoningLevel,
+  catalogRevision: S.optionalKey(S.Int),
 })
 export type SettingsEvaluation = typeof SettingsEvaluation.Type
 export const SettingsSnapshot = S.Struct({
   settings: AnalysisSettings,
   models: S.Array(AnalysisModel),
   evaluation: SettingsEvaluation,
+  catalog: ModelCatalogStatus,
 })
 export type SettingsSnapshot = typeof SettingsSnapshot.Type
 export const AnalysisSettingsSnapshot = S.Struct({
@@ -140,6 +171,9 @@ export const AnalysisSettingsSnapshot = S.Struct({
   effectiveReasoning: ReasoningLevel,
   minimumReservationUsd: S.Finite,
   promptVersion: S.String,
+  model: S.optionalKey(AnalysisModel),
+  catalogRevision: S.optionalKey(S.Int),
+  catalogFetchedAt: S.optionalKey(S.String),
 })
 export type AnalysisSettingsSnapshot = typeof AnalysisSettingsSnapshot.Type
 export const Budget = S.Struct({
@@ -363,6 +397,11 @@ export const getDiscoverySettingsRpc = Rpc.make('getDiscoverySettings', {
   success: SettingsSnapshot,
   error: DiscoveryError,
 })
+export const refreshDiscoveryModelsRpc = Rpc.make('refreshDiscoveryModels', {
+  payload: S.Struct({}),
+  success: SettingsSnapshot,
+  error: DiscoveryError,
+})
 export const previewDiscoverySettingsRpc = Rpc.make(
   'previewDiscoverySettings',
   {
@@ -456,6 +495,7 @@ export const deleteDiscoveryRunRpc = Rpc.make('deleteDiscoveryRun', {
 })
 export const DiscoveryRpcs = RpcGroup.make(
   getDiscoverySettingsRpc,
+  refreshDiscoveryModelsRpc,
   previewDiscoverySettingsRpc,
   saveDiscoverySettingsRpc,
   getDiscoveryWorkspaceRpc,

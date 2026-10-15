@@ -4,8 +4,8 @@ import { join } from 'node:path'
 
 import type { CaptureInput } from '../../src/contract.ts'
 import { readConfig } from '../config.ts'
-import { DiscoveryEngine } from '../engine.ts'
 import { createProviders } from '../providers.ts'
+import { openTestEngine } from './engine.ts'
 
 const mode = process.argv[2]!
 const dir = process.argv[3]!
@@ -22,7 +22,7 @@ const config = readConfig({
   DISCOVERY_ATTEMPT_RESERVATION_USD: '0.01',
 })
 const fixture = createProviders(config)
-const engine = await DiscoveryEngine.open(config, {
+const engine = await openTestEngine(config, {
   providers: {
     ...fixture,
     reservationBoundUsd: 0.001,

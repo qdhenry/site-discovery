@@ -14,7 +14,7 @@ const token = crypto.randomUUID() + crypto.randomUUID()
 await mkdir(output, { recursive: true })
 const service = Bun.spawn([process.execPath, 'service/main.ts'], {
   cwd: dot,
-  env: { ...process.env, DISCOVERY_STATE_DIR: state, DISCOVERY_FIXTURES: '1', DISCOVERY_OWNER_TOKEN: token,
+  env: { ...process.env, DISCOVERY_STATE_DIR: state, DISCOVERY_FIXTURES: '1', DISCOVERY_MODEL_CATALOG_FIXTURE: '1', DISCOVERY_OWNER_TOKEN: token,
     CLOUDFLARE_ACCOUNT_ID: '', CLOUDFLARE_BROWSER_API_TOKEN: '', AI_GATEWAY_API_TOKEN: '', CLOUDFLARE_AI_GATEWAY_ID: '', ANTHROPIC_API_KEY: '',
     DISCOVERY_RUN_LIMIT_USD: '', DISCOVERY_MONTHLY_LIMIT_USD: '', DISCOVERY_ATTEMPT_RESERVATION_USD: '',
   }, stdout: 'ignore', stderr: 'pipe',
@@ -49,6 +49,14 @@ try {
   await page.screenshot({ path: join(output, '01-setup-desktop.png'), fullPage: true })
   await page.getByRole('button', { name: 'Agent settings', exact: true }).click()
   await expect(page.getByLabel('Maximum output tokens')).toHaveValue('8192')
+  await expect(page.locator('.discovery-model-catalog')).toContainText('Fixture model catalog')
+  await expect(page.locator('.discovery-model-catalog')).toContainText('cached for 4 hours')
+  await expect(page.locator('.discovery-model-catalog')).toContainText('Fetched')
+  await expect(page.locator('.discovery-model-catalog')).toContainText('Expires')
+  await expect(page.locator('.discovery-settings option[value="claude-haiku-5-5"]')).toHaveJSProperty('disabled', true)
+  await expect(page.locator('.discovery-unavailable-models')).toContainText('pricing')
+  await page.locator('.discovery-unavailable-models > summary').click()
+  await page.locator('.discovery-model-details > summary').click()
   await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled()
   await page.locator('.discovery-settings-advanced > summary').click()
   await expect(page.getByLabel('Reasoning level')).toBeVisible()
@@ -67,6 +75,12 @@ try {
   await expect.poll(() => traffic.filter(row => row.rpc === 'getDiscoverySettings').length, { timeout: 10000 }).toBeGreaterThan(settingsReads)
   await expect(page.getByLabel('Maximum output tokens')).toHaveValue('12000')
   await expect(page.getByLabel('Additional analysis instructions')).toContainText('fixture verification')
+  await page.getByRole('button', { name: 'Refresh model catalog', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Refresh model catalog', exact: true })).toBeEnabled()
+  await expect(page.getByLabel('Maximum output tokens')).toHaveValue('12000')
+  await expect(page.getByLabel('Additional analysis instructions')).toContainText('fixture verification')
+  expect(traffic.filter(row => row.rpc === 'refreshDiscoveryModels')).toHaveLength(1)
+  pass('Four-hour fixture model catalog shows source/fetched/expiry and explicit refresh preserves the dirty draft')
   expect(traffic.filter(row => row.rpc === 'analyzeDiscoveryPages')).toHaveLength(0)
   await page.getByRole('button', { name: 'Preview settings', exact: true }).click()
   await expect(page.locator('.discovery-settings-evaluation')).toContainText('Minimum reservation / page')
