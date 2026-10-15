@@ -1,18 +1,18 @@
 {
   "agentAuthored": [],
   "capabilities": [],
-  "catalogSnapshotSha256": "63b9a6c512127410d8955cfdf8fff4b1853f760e86c3d47403e32dfbad58ee9b",
+  "catalogSnapshotSha256": "c5edf392d2f2d328dad0a415de4813321a96db4a5df22857f624797e77bba7c3",
   "compilerVersion": "1.37.0-p6",
   "files": [
     {
-      "bytes": 89,
+      "bytes": 272,
       "path": ".gitignore",
-      "sha256": "eb9d62493443d68ac6d6217fe72aeadcf6bcded9b02f5af5866d668eaedec724"
+      "sha256": "895506a4da5d4dc401b160137577be1925852eb27b3458fd8cc7a399f64305b1"
     },
     {
       "bytes": 12287,
       "path": "composition.spec.v2.json",
-      "sha256": "0b43259ae4e427d8bc5c8b8b6062ff34b944d113cb6054a6be0f5c121c338a08"
+      "sha256": "14d8cedbce2feda05a5c70b605b6d1ecf9d0e4f63c61f50e81b2056f9113cb3a"
     },
     {
       "bytes": 561,
@@ -42,7 +42,7 @@
     {
       "bytes": 3449,
       "path": "package.json",
-      "sha256": "f6c0a7336f7f9d6fbff51a52a7a1d4fda7a5aec94d2d739c1b9b3db43b3937b3"
+      "sha256": "e1baefb1566019de6bf2b314f6894f7d1af6e48661fce194cbc56afc504a222b"
     },
     {
       "bytes": 440,
@@ -325,9 +325,9 @@
       "sha256": "4b1136d7a02623b36f5ed32f3d3f6a32f1cb82311d187836ea6b7de1e1c627d0"
     },
     {
-      "bytes": 8061,
+      "bytes": 9543,
       "path": "README.md",
-      "sha256": "c1a3e8c7f78d43db7c8309ac3dc700a622413025f57c9d04537ea3220367b282"
+      "sha256": "abea474b9e25f7eb76164d4d24c0c3b55f1ecbe4db4a83e815b5692fcf7ce5d9"
     },
     {
       "bytes": 3234,
@@ -340,14 +340,19 @@
       "sha256": "ed4bee6ad8e5499e9336ae0562ef12d7ea63d304923103d1e259ccb72ded608b"
     },
     {
-      "bytes": 4690,
+      "bytes": 2498,
+      "path": "service/auth.bun.test.ts",
+      "sha256": "9e5c5c1fd945076ee11e96366b7af58f7b0e5b8ac943495b26ba5355193ad0b8"
+    },
+    {
+      "bytes": 4951,
       "path": "service/auth.ts",
-      "sha256": "66bde0330ed6e317f0bedb4d7c307124dd2807ad8710e1653eaf181ac3f23c5c"
+      "sha256": "0caf1f6aa9534dd6a6564acbdf2cd4e3308bfc78703bcceaa60353493266c169"
     },
     {
       "bytes": 910,
       "path": "service/capabilities.json",
-      "sha256": "0ff9573fba67e20737a22b72fd982bcac341efc7f08f57ff51643bd06ec28488"
+      "sha256": "7110c4663411d281a324362e7d951785945c089e4922f4778ccb677504afa36f"
     },
     {
       "bytes": 292,
@@ -360,9 +365,9 @@
       "sha256": "cf50cefb7658212ef834e60f0861705d84377f659158e872c23901e45c785af8"
     },
     {
-      "bytes": 2639,
+      "bytes": 3142,
       "path": "service/config.ts",
-      "sha256": "dbe9fa1fe419e5454e1ee9f71ec25f1ab9f248ffc23438f7ebdbde61874b2fb3"
+      "sha256": "a5807717f2674623b891a0fc2ce14b62c06f18aa5fb507a5f1929039a21c63e6"
     },
     {
       "bytes": 404,
@@ -420,9 +425,9 @@
       "sha256": "dc95154d36cbf60bb47751f904c0f90b6b994e75cd3be8323963e8c08d767b91"
     },
     {
-      "bytes": 10963,
+      "bytes": 11368,
       "path": "service/routes.ts",
-      "sha256": "8948bf1c56daf4ddc183ea6f6c82394475489650cc9f3e2dac9a61d4e198b0a0"
+      "sha256": "14d5e619482b87c56fcfa0ebe872541ffeb1e5caf3e4ec67d8d4e345d18753c6"
     },
     {
       "bytes": 1115,
@@ -440,9 +445,9 @@
       "sha256": "6548dd385964dd082ce1bc86a421c633786bec0513aa51b7c5e2cd8a73bf8e72"
     },
     {
-      "bytes": 1038,
+      "bytes": 1062,
       "path": "service/shape-main.ts",
-      "sha256": "c33df0c0f0d40bc257c51b55a42445719e0b22bcfae5a49142492dfedd9d7ff9"
+      "sha256": "186e89f2d30753cbc6c4eb66e0ebd3b6afe8685ff6abcf05bc2eec4310aaf501"
     },
     {
       "bytes": 1947,
@@ -470,9 +475,9 @@
       "sha256": "ea4b38bf0514d2bd729af91763d536399556d2f2ed0b50a25729311ea0de495b"
     },
     {
-      "bytes": 13706,
+      "bytes": 15050,
       "path": "service/wire.bun.test.ts",
-      "sha256": "26d1144152c1fa3d8b0ab61ec512fdfad76f98dd4684e8b370366278cedf1807"
+      "sha256": "121652eb75341e2dc22c388b75c51845c404fa3b7ff4e61314f40805e0235fc7"
     },
     {
       "bytes": 143,
@@ -580,9 +585,9 @@
       "sha256": "af49a75173941a7189968562445ced697b5ce1ce70d52d408daacb96d0b91ecf"
     },
     {
-      "bytes": 10358,
+      "bytes": 12099,
       "path": "workspace.metadata.json",
-      "sha256": "55a8f4fc4eefd424893e0e94b3de964f955cb0398e2d44f9329ce4abfab92235"
+      "sha256": "12818c817dd8adfa006c0f2e5d6f174abdfabbbd6df210c1af0d57541511821d"
     },
     {
       "bytes": 410,
@@ -601,11 +606,11 @@
   },
   "migrations": [],
   "recipe": "single-view@1",
-  "resolvedSpecSha256": "ba2a20fc3127c893a94cc7dd820e081ddf9ed25e4073afaec018ab76b4965bae",
+  "resolvedSpecSha256": "a57492f26668f68bb5e3556c6b88adbea4a667049c305b1b0afb32ba0c5a5adb",
   "schemaVersion": 3,
   "userMetadata": {
     "inputPath": "workspace.metadata.json",
-    "inputSha256": "55a8f4fc4eefd424893e0e94b3de964f955cb0398e2d44f9329ce4abfab92235",
+    "inputSha256": "12818c817dd8adfa006c0f2e5d6f174abdfabbbd6df210c1af0d57541511821d",
     "schemaVersion": 1,
     "source": "caller"
   }

@@ -44,14 +44,14 @@
       "shape:chat@1": "e9e2d8900b920c887e22f0e7f5af82b863ebbab118403ad55330b5d4692d10b2",
       "shape:console@1": "e3787b00b3e01f1b26a98cd764aa9c9d770dee19e488d138f85146b5522e9293",
       "shape:detail@1": "3618d25fd00f2742b774c0e1e9f137cacaeb6dcd84780ab1ac6f079a32e01fd2",
-      "shape:discovery@1": "5332c5b1b1305bea7ec93a3e835bb351ea5f5ea7ec91e943963727e28067d65c",
+      "shape:discovery@1": "b974e78063751d81eb0d7df2bd482e01a9327d07d77850f671b17000ff9ffa95",
       "shape:form@1": "2b5b35d799924d7958cc09323476e836e6759c61bf437fba46f75063c05abab3",
       "shape:list@1": "8b2d78c24642eaf7df23096606169bb9a2ef2794632187b6ec271234786ae5de",
       "shape:metrics@1": "00bd3a5a59f0408fddab6de6f5d3d2b348e38e41fdeadd8c1824d4afd4032bf3",
       "shape:table@1": "c964849ded424140fc0f3ce12ac56edfaece7a1c5abe2f7798c3c6107b69f0af",
       "shape:view@1": "5d9fb017ac6edeb72a49cdc6e3379d86f23ee5dba6333c7b45f1401aaf502386"
     },
-    "snapshotSha256": "63b9a6c512127410d8955cfdf8fff4b1853f760e86c3d47403e32dfbad58ee9b",
+    "snapshotSha256": "c5edf392d2f2d328dad0a415de4813321a96db4a5df22857f624797e77bba7c3",
     "targetMatrixDigest": "27087dc7636b0e8d70d4f62b841bfd88c64d051fe919ccfc68d9edfffc7cf8b0"
   },
   "generate": [
@@ -114,14 +114,14 @@
           "shape:chat@1": "e9e2d8900b920c887e22f0e7f5af82b863ebbab118403ad55330b5d4692d10b2",
           "shape:console@1": "e3787b00b3e01f1b26a98cd764aa9c9d770dee19e488d138f85146b5522e9293",
           "shape:detail@1": "3618d25fd00f2742b774c0e1e9f137cacaeb6dcd84780ab1ac6f079a32e01fd2",
-          "shape:discovery@1": "5332c5b1b1305bea7ec93a3e835bb351ea5f5ea7ec91e943963727e28067d65c",
+          "shape:discovery@1": "b974e78063751d81eb0d7df2bd482e01a9327d07d77850f671b17000ff9ffa95",
           "shape:form@1": "2b5b35d799924d7958cc09323476e836e6759c61bf437fba46f75063c05abab3",
           "shape:list@1": "8b2d78c24642eaf7df23096606169bb9a2ef2794632187b6ec271234786ae5de",
           "shape:metrics@1": "00bd3a5a59f0408fddab6de6f5d3d2b348e38e41fdeadd8c1824d4afd4032bf3",
           "shape:table@1": "c964849ded424140fc0f3ce12ac56edfaece7a1c5abe2f7798c3c6107b69f0af",
           "shape:view@1": "5d9fb017ac6edeb72a49cdc6e3379d86f23ee5dba6333c7b45f1401aaf502386"
         },
-        "snapshotSha256": "63b9a6c512127410d8955cfdf8fff4b1853f760e86c3d47403e32dfbad58ee9b",
+        "snapshotSha256": "c5edf392d2f2d328dad0a415de4813321a96db4a5df22857f624797e77bba7c3",
         "targetMatrixDigest": "27087dc7636b0e8d70d4f62b841bfd88c64d051fe919ccfc68d9edfffc7cf8b0"
       },
       "domain": {
