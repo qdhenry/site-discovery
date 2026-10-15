@@ -387,6 +387,38 @@ test('the :5193 mini-host crosses credentialed CORS on the real service stack; o
     })
     expect(crossSite.status).toBe(403)
 
+    // Regression: following a link to the app from another site (the README on
+    // GitHub, a docs page, a chat app) is a cross-site top-level navigation.
+    // It must reach the sign-in shell (503 only means `dist/` is not built yet).
+    // Frames and every non-shell route stay closed to cross-site requests.
+    const crossSiteFetch = (path: string, dest: string, mode = 'navigate') =>
+      call(path, {
+        headers: {
+          'sec-fetch-site': 'cross-site',
+          'sec-fetch-mode': mode,
+          'sec-fetch-dest': dest,
+        },
+      })
+    const shell = await crossSiteFetch('/', 'document')
+    expect([200, 503]).toContain(shell.status)
+    expect(shell.headers.get('content-type')).toContain('text/html')
+    expect((await crossSiteFetch('/', 'iframe')).status).toBe(403)
+    expect((await crossSiteFetch('/', 'empty', 'cors')).status).toBe(403)
+    expect((await crossSiteFetch('/session', 'document')).status).toBe(403)
+    expect(
+      (await crossSiteFetch('/private/screenshots/p/r/x/desktop', 'document'))
+        .status,
+    ).toBe(403)
+    const hostileShell = await call('/', {
+      headers: {
+        host: 'attacker.example',
+        'sec-fetch-site': 'cross-site',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'document',
+      },
+    })
+    expect(hostileShell.status).toBe(403)
+
     // Same-origin traffic is unchanged: no CORS headers at all.
     const sameOrigin = await rpc('getDiscoveryWorkspace', base, cookie)
     expect(sameOrigin.status).toBe(200)

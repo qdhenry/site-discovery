@@ -5,10 +5,9 @@ import {
   timingSafeEqual,
 } from 'node:crypto'
 import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
 
 import type { SessionState } from '../src/contract.ts'
-import { type Config, fail } from './config.ts'
+import { type Config, fail, ownerTokenPath } from './config.ts'
 
 export type RequestHeaders = Readonly<Record<string, string | undefined>>
 /** The compiler's paired-view mini-host (`mini-host/vite.config.ts`, fixed at
@@ -33,7 +32,7 @@ export class OwnerSessions {
   ) {}
   static async open(config: Config, port: number) {
     await mkdir(config.stateDir, { recursive: true, mode: 0o700 })
-    const path = join(config.stateDir, 'owner-token')
+    const path = ownerTokenPath(config)
     let token = config.ownerToken
     if (!token) {
       try {
@@ -57,7 +56,14 @@ export class OwnerSessions {
       )
     return new OwnerSessions(token, port)
   }
-  validateTransport(headers: RequestHeaders, requireOrigin = false) {
+  /** `shellNavigation` admits a cross-site top-level load of the public shell:
+   * following a link to the app from another site. Host is still checked, and
+   * the SameSite=Strict cookie is not sent on that request anyway. */
+  validateTransport(
+    headers: RequestHeaders,
+    requireOrigin = false,
+    shellNavigation = false,
+  ) {
     const hosts = [`127.0.0.1:${this.port}`, `localhost:${this.port}`]
     const host = headers.host?.toLowerCase()
     if (!host || !hosts.includes(host))
@@ -68,7 +74,7 @@ export class OwnerSessions {
       (requireOrigin && !origin)
     )
       return fail('forbidden', 'Same-origin local request required')
-    if (headers['sec-fetch-site'] === 'cross-site')
+    if (headers['sec-fetch-site'] === 'cross-site' && !shellNavigation)
       return fail('forbidden', 'Cross-site access was rejected')
   }
   private find(headers: RequestHeaders) {

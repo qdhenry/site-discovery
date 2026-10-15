@@ -45,10 +45,25 @@ DISCOVERY_FIXTURES=1 DISCOVERY_MODEL_CATALOG_FIXTURE=1 bun run dev
 ```
 
 1. Open http://127.0.0.1:3193/.
-2. Paste the contents of `.local/discovery/owner-token` into the sign-in form. The service creates this file on first start (mode `0600`).
+2. Copy the token and paste it into the sign-in form. The service creates the token file on first start (mode `0600`) and prints its full path on startup:
+
+   ```
+   Site Discovery: http://127.0.0.1:3193/ — local owner token: /path/to/site-discovery/.local/discovery/owner-token
+   ```
+
+   On macOS, `pbcopy < .local/discovery/owner-token` copies it from the repository folder.
 3. Choose **Fixture** in the capture form and run a capture.
 
 Fixture runs are labeled as such and make no network or provider calls.
+
+### Sign-in troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| "The owner token was not accepted." | The service on port 3193 belongs to another folder or copy of this repository, which has its own token. Run `lsof -nP -iTCP:3193 -sTCP:LISTEN` to find it, stop it, and start `bun run dev` here. Use the token at the path printed on startup. |
+| "Too many sign-in attempts" | 10 failed attempts lock sign-in for one minute. Wait, then paste the correct token. |
+| Signed out unexpectedly | Only one session exists at a time. A sign-in from another browser or the mini-host, or a service restart, ends the previous session. |
+| `{"error":"forbidden","message":"Cross-site access was rejected"}` | Older checkouts rejected links to the app from other sites, such as this README on GitHub. Pull the latest `main` and restart `bun run dev`, or type the address into the address bar. |
 
 ## Cloudflare and Anthropic setup
 
@@ -95,7 +110,7 @@ Settings changes apply the next time you start or retry analysis. Running analys
 
 - The service binds to loopback (`127.0.0.1`) only. It is not designed to be exposed on a network or deployed.
 - One owner signs in with the local token. Sessions are HttpOnly and SameSite=Strict, last 12 hours, and end when the service restarts.
-- Host, origin and session are checked before any RPC is decoded. The only foreign origin allowed is the development mini-host at `http://localhost:5193`.
+- Host, origin and session are checked before any RPC is decoded. The only foreign origin allowed is the development mini-host at `http://localhost:5193`. Cross-site requests are rejected, except a top-level page load of the sign-in shell, so links to the app from other sites still work.
 - Screenshots and rendered DOM are treated as untrusted model input. Model output must pass strict schemas before it becomes a finding.
 - Private and local URLs are refused, DNS results are pinned per socket, and every redirect is re-validated.
 

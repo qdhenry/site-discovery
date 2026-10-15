@@ -4,6 +4,7 @@ import {
   runRpcService,
 } from '@bespokeagentics/microdots-runtime/service'
 
+import { ownerTokenSource, readConfig } from './config.ts'
 import { RpcAppLayer } from './handlers.ts'
 import { ExtraRoutes, ROUTE_OWNED_CORS_PREFIXES } from './routes.ts'
 import { closeRuntime, initializeRuntime } from './runtime.ts'
@@ -15,7 +16,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const)
     void closeRuntime().finally(() => process.exit(0))
   })
 console.log(
-  `Site Discovery: http://127.0.0.1:${PORT}/ — local owner token: ${process.env.DISCOVERY_STATE_DIR || '.local/discovery'}/owner-token`,
+  `Site Discovery: http://127.0.0.1:${PORT}/ — local owner token: ${ownerTokenSource(readConfig())}`,
 )
 runRpcService(
   makeRpcService({

@@ -115,11 +115,19 @@ export const TransportGuard = HttpRouter.middleware(
       const check = yield* Effect.tryPromise({
         try: async () => {
           const { sessions } = await currentRuntime()
+          // Only a top-level document load of the shell; frames and fetches
+          // carry another Sec-Fetch-Dest/Mode and stay same-site only.
+          const shellNavigation =
+            path === '/' &&
+            request.method === 'GET' &&
+            request.headers['sec-fetch-mode'] === 'navigate' &&
+            request.headers['sec-fetch-dest'] === 'document'
           sessions.validateTransport(
             request.headers,
             request.method !== 'GET' &&
               request.method !== 'HEAD' &&
               request.method !== 'OPTIONS',
+            shellNavigation,
           )
           const publicRoute =
             (path === '/' && request.method === 'GET') ||

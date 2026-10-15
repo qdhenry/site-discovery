@@ -1,4 +1,4 @@
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
 import { type Configuration, DiscoveryError } from '../src/contract.ts'
 
@@ -46,6 +46,14 @@ export const readConfig = (env: Environment = process.env): Config => ({
   attemptReservationUsd: positive(env.DISCOVERY_ATTEMPT_RESERVATION_USD),
   ownerToken: env.DISCOVERY_OWNER_TOKEN || '',
 })
+/** Absolute path of the generated sign-in token; `stateDir` is already resolved. */
+export const ownerTokenPath = (c: Pick<Config, 'stateDir'>): string =>
+  join(c.stateDir, 'owner-token')
+/** Where the owner should read the sign-in token, as printed at startup. A
+ * relative path is ambiguous when several checkouts can serve port 3193. */
+export const ownerTokenSource = (
+  c: Pick<Config, 'stateDir' | 'ownerToken'>,
+): string => (c.ownerToken ? 'DISCOVERY_OWNER_TOKEN' : ownerTokenPath(c))
 export const configuration = (c: Config): Configuration => {
   const missingCapture = [
     !c.accountId && 'CLOUDFLARE_ACCOUNT_ID',

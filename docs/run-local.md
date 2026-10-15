@@ -8,7 +8,7 @@ bun run check
 bun run dev
 ```
 
-Read `.local/discovery/owner-token` locally and paste its value into the sign-in form. The service creates it on first start with mode 0600. Do not put the token in a URL or share it. You can set `DISCOVERY_OWNER_TOKEN` instead of using a generated file. Sessions expire after twelve hours and end when the service restarts. Application data and tasks persist independently of sessions.
+Read the owner token file locally and paste its value into the sign-in form. The service creates it on first start with mode 0600 and prints its absolute path on startup (`local owner token: …/.local/discovery/owner-token`). If several copies of this repository exist, only the one serving port 3193 has the matching token; `lsof -nP -iTCP:3193 -sTCP:LISTEN` shows which process that is. See the [README troubleshooting table](../README.md#sign-in-troubleshooting). Do not put the token in a URL or share it. You can set `DISCOVERY_OWNER_TOKEN` instead of using a generated file. Sessions expire after twelve hours and end when the service restarts. Application data and tasks persist independently of sessions.
 
 The optional mini-host also works. With the service running, start it with `bunx vite --config mini-host/vite.config.ts` and open **http://localhost:5193/**. It mounts the same elements with `api-url="http://localhost:3193"` and calls the service cross-origin. Sign in there separately, because its cookie belongs to `localhost`, not `127.0.0.1`.
 
