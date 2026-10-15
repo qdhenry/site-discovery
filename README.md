@@ -6,12 +6,15 @@ Site Discovery is a local, single-owner app. You give it a URL, a list of URLs, 
 
 > **Cloudflare is required for live use.** Capture uses the Browser Run REST API and analysis goes through an authenticated AI Gateway. There is no fallback provider. A built-in **fixture mode** lets you try the full workflow without any accounts.
 
+![Site Discovery after a fixture analysis: run summary, screenshot review, a detected content type and the save preview](docs/images/screenshot.png)
+
 ```mermaid
 flowchart LR
   UI["Browser UI<br/>(Foldkit)"] -->|"owner session<br/>Effect RPC"| SVC["Bun service<br/>127.0.0.1:3193"]
   SVC --> DB[("SQLite + screenshots<br/>.local/discovery")]
   SVC -->|capture| BR["Cloudflare<br/>Browser Run"]
   SVC -->|"analyze (explicit only)"| GW["Cloudflare<br/>AI Gateway"] --> CL["Anthropic<br/>Claude"]
+  SVC -->|"model catalog (4 h cache)"| MA["Anthropic<br/>Models API"]
 ```
 
 ## Features
