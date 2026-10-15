@@ -35,7 +35,7 @@ jobs:
         env:
           DISCOVERY_PROOF_DIR: ${{ runner.temp }}/ui-proof
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ui-proof
           path: ${{ runner.temp }}/ui-proof
